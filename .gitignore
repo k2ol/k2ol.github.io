@@ -23,5 +23,4 @@ pnpm-debug.log*
 
 .justfile
 
-memory.md
 AGENTS.md
