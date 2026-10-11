@@ -1,17 +1,113 @@
 ---
 ---
 
-<html lang="en">
+<html lang="zh-Hant">
 	<head>
 		<meta charset="utf-8" />
 		<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
 		<link rel="icon" href="/favicon.ico" />
 		<meta name="viewport" content="width=device-width" />
 		<meta name="generator" content={Astro.generator} />
-		<title>Astro</title>
+		<title>k2ol.github.io</title>
+		<style>
+			:root {
+				color-scheme: light dark;
+				--bg: #f6f7fb;
+				--fg: #17171c;
+				--muted: #7a7a85;
+				--card-bg: rgba(255, 255, 255, 0.75);
+				--card-border: rgba(0, 0, 0, 0.08);
+				--link: #4f46e5;
+			}
+			@media (prefers-color-scheme: dark) {
+				:root {
+					--bg: #0d0d11;
+					--fg: #f2f2f5;
+					--muted: #9a9aa5;
+					--card-bg: rgba(255, 255, 255, 0.05);
+					--card-border: rgba(255, 255, 255, 0.1);
+					--link: #8b85ff;
+				}
+			}
+			* {
+				box-sizing: border-box;
+			}
+			body {
+				margin: 0;
+				min-height: 100vh;
+				background: var(--bg);
+				color: var(--fg);
+				font-family: system-ui, -apple-system, 'Segoe UI', 'Noto Sans TC', sans-serif;
+				display: flex;
+				align-items: center;
+				justify-content: center;
+			}
+			main {
+				text-align: center;
+				padding: 2rem 1.5rem;
+			}
+			.badge {
+				display: inline-block;
+				padding: 0.3rem 0.9rem;
+				border-radius: 999px;
+				border: 1px solid var(--card-border);
+				background: var(--card-bg);
+				color: var(--muted);
+				font-size: 0.9rem;
+				margin: 0 0 1.4rem;
+			}
+			h1 {
+				margin: 0 0 0.6rem;
+				font-size: clamp(2.4rem, 9vw, 4.6rem);
+				line-height: 1.1;
+				letter-spacing: -0.02em;
+				background: linear-gradient(120deg, #6366f1, #22b8cf, #34d399);
+				-webkit-background-clip: text;
+				background-clip: text;
+				color: transparent;
+			}
+			.sub {
+				margin: 0 0 2rem;
+				color: var(--muted);
+				font-size: 1.1rem;
+			}
+			.cta {
+				display: inline-block;
+				padding: 0.85rem 2.2rem;
+				border-radius: 999px;
+				background: linear-gradient(120deg, #6366f1, #22b8cf);
+				color: #fff;
+				font-size: 1.05rem;
+				font-weight: 700;
+				text-decoration: none;
+				box-shadow: 0 8px 24px rgba(99, 102, 241, 0.35);
+				transition: transform 0.15s, box-shadow 0.15s;
+			}
+			.cta:hover {
+				transform: translateY(-2px);
+				box-shadow: 0 12px 28px rgba(99, 102, 241, 0.45);
+			}
+			.quick {
+				margin: 1.8rem 0 0;
+				color: var(--muted);
+				font-size: 0.95rem;
+			}
+			.quick a {
+				color: var(--link);
+				text-decoration: none;
+			}
+			.quick a:hover {
+				text-decoration: underline;
+			}
+		</style>
 	</head>
 	<body>
-		<h1>Astro</h1>
-		<p><a href="/t/index.html">站內導覽</a></p>
+		<main>
+			<p class="badge">🧰 工具小站</p>
+			<h1>k2ol.github.io</h1>
+			<p class="sub">簡單、實用、開即用的網頁小工具。</p>
+			<a class="cta" href="/t/index.html">進入工具箱 →</a>
+			<p class="quick">快速連結：<a href="/t/time.html">🕐 現在時間</a> · <a href="/t/metronome.html">🥁 節拍器</a></p>
+		</main>
 	</body>
 </html>

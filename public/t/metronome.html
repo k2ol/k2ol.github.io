@@ -1,0 +1,318 @@
+<!doctype html>
+<html lang="zh-Hant">
+	<head>
+		<meta charset="utf-8" />
+		<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+		<link rel="icon" href="/favicon.ico" />
+		<meta name="viewport" content="width=device-width" />
+		<title>節拍器</title>
+		<script>
+			(() => {
+				const saved = localStorage.getItem('t-theme');
+				const theme = saved || (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+				document.documentElement.dataset.theme = theme;
+			})();
+		</script>
+		<style>
+			:root {
+				--bg: #ffffff;
+				--fg: #1a1a1a;
+				--muted: #8a8a8a;
+				--btn-bg: rgba(0, 0, 0, 0.06);
+				--btn-hover: rgba(0, 0, 0, 0.12);
+				--accent: #6366f1;
+				--dot: rgba(0, 0, 0, 0.15);
+				--dot-active: #6366f1;
+			}
+			html[data-theme='dark'] {
+				--bg: #111111;
+				--fg: #f5f5f5;
+				--muted: #9a9a9a;
+				--btn-bg: rgba(255, 255, 255, 0.08);
+				--btn-hover: rgba(255, 255, 255, 0.16);
+				--accent: #8b85ff;
+				--dot: rgba(255, 255, 255, 0.18);
+				--dot-active: #8b85ff;
+			}
+			body {
+				margin: 0;
+				min-height: 100vh;
+				background: var(--bg);
+				color: var(--fg);
+				font-family: system-ui, -apple-system, 'Segoe UI', 'Noto Sans TC', sans-serif;
+				display: flex;
+				flex-direction: column;
+				align-items: center;
+				justify-content: center;
+				gap: 1.6rem;
+				padding: 2rem 1rem;
+				box-sizing: border-box;
+				transition: background 0.3s, color 0.3s;
+				user-select: none;
+			}
+			h1 {
+				margin: 0;
+				font-size: 1.4rem;
+				color: var(--muted);
+				font-weight: 600;
+			}
+			#dots {
+				display: flex;
+				gap: 0.9rem;
+				min-height: 2.2rem;
+				align-items: center;
+			}
+			.dot {
+				width: 1.4rem;
+				height: 1.4rem;
+				border-radius: 50%;
+				background: var(--dot);
+				transition: transform 0.08s, background 0.08s, box-shadow 0.08s;
+			}
+			.dot.accent {
+				box-shadow: inset 0 0 0 0.22rem var(--dot);
+				background: transparent;
+			}
+			.dot.on {
+				background: var(--dot-active);
+				transform: scale(1.45);
+				box-shadow: 0 0 18px var(--dot-active);
+			}
+			.dot.accent.on {
+				background: var(--dot-active);
+			}
+			#bpm-row {
+				display: flex;
+				align-items: center;
+				gap: 1.2rem;
+			}
+			#bpm-row button {
+				font: inherit;
+				font-size: 1.6rem;
+				width: 3.2rem;
+				height: 3.2rem;
+				border-radius: 50%;
+				border: none;
+				background: var(--btn-bg);
+				color: inherit;
+				cursor: pointer;
+			}
+			#bpm-row button:hover {
+				background: var(--btn-hover);
+			}
+			#bpm {
+				font-size: min(18vw, 6rem);
+				font-weight: 800;
+				font-variant-numeric: tabular-nums;
+				line-height: 1;
+				min-width: 3.4em;
+				text-align: center;
+			}
+			#bpm small {
+				font-size: 0.3em;
+				font-weight: 500;
+				color: var(--muted);
+				margin-left: 0.2em;
+			}
+			#bpm-slider {
+				width: min(80vw, 22rem);
+				accent-color: var(--accent);
+			}
+			.row {
+				display: flex;
+				gap: 0.8rem;
+				align-items: center;
+				flex-wrap: wrap;
+				justify-content: center;
+			}
+			.row > * {
+				font: inherit;
+				padding: 0.55rem 1.2rem;
+				border-radius: 999px;
+				border: none;
+				background: var(--btn-bg);
+				color: inherit;
+				cursor: pointer;
+			}
+			.row > *:hover {
+				background: var(--btn-hover);
+			}
+			#play-btn {
+				font-size: 1.25rem;
+				font-weight: 700;
+				padding: 0.8rem 2.6rem;
+				background: var(--accent);
+				color: #fff;
+			}
+			#play-btn:hover {
+				filter: brightness(1.1);
+				background: var(--accent);
+			}
+			select#beats {
+				appearance: auto;
+			}
+			#links {
+				position: fixed;
+				top: 1rem;
+				right: 1rem;
+				display: flex;
+				gap: 0.7rem;
+			}
+			#links a {
+				color: var(--muted);
+				text-decoration: none;
+				font-size: 1.2rem;
+			}
+			#links a:hover {
+				color: var(--fg);
+			}
+		</style>
+	</head>
+	<body>
+		<div id="links">
+			<a href="/t/index.html" title="工具箱">🧰</a>
+			<a href="/" title="回首頁">🏠</a>
+		</div>
+		<h1>🥁 節拍器</h1>
+		<div id="dots"></div>
+		<div id="bpm-row">
+			<button id="bpm-down" aria-label="減慢">−</button>
+			<div id="bpm">120<small>BPM</small></div>
+			<button id="bpm-up" aria-label="加快">＋</button>
+		</div>
+		<input type="range" id="bpm-slider" min="30" max="240" value="120" aria-label="BPM 調整" />
+		<div class="row">
+			<select id="beats" aria-label="每小節拍數">
+				<option value="2">2 拍</option>
+				<option value="3">3 拍</option>
+				<option value="4" selected>4 拍</option>
+				<option value="5">5 拍</option>
+				<option value="6">6 拍</option>
+				<option value="7">7 拍</option>
+				<option value="8">8 拍</option>
+			</select>
+			<button id="tap-btn">點拍</button>
+		</div>
+		<button id="play-btn">▶ 開始</button>
+		<script>
+			const dotsEl = document.getElementById('dots');
+			const bpmEl = document.getElementById('bpm');
+			const slider = document.getElementById('bpm-slider');
+			const beatsSel = document.getElementById('beats');
+			const playBtn = document.getElementById('play-btn');
+			const tapBtn = document.getElementById('tap-btn');
+
+			let bpm = 120;
+			let beatsPerBar = 4;
+			let ctx = null;
+			let running = false;
+			let nextTime = 0;
+			let beat = 0;
+			let timer = null;
+
+			function renderBpm() {
+				bpmEl.innerHTML = '';
+				bpmEl.append(String(bpm));
+				const small = document.createElement('small');
+				small.textContent = 'BPM';
+				bpmEl.append(small);
+				slider.value = bpm;
+			}
+
+			function setBpm(v) {
+				bpm = Math.min(240, Math.max(30, Math.round(v)));
+				renderBpm();
+			}
+
+			function renderDots() {
+				dotsEl.innerHTML = '';
+				for (let i = 0; i < beatsPerBar; i++) {
+					const d = document.createElement('div');
+					d.className = 'dot' + (i === 0 ? ' accent' : '');
+					dotsEl.append(d);
+				}
+			}
+
+			function highlight(b) {
+				[...dotsEl.children].forEach((d, i) => d.classList.toggle('on', i === b));
+			}
+
+			function playClick(time, isAccent) {
+				const osc = ctx.createOscillator();
+				const gain = ctx.createGain();
+				osc.frequency.value = isAccent ? 1150 : 760;
+				gain.gain.setValueAtTime(0.9, time);
+				gain.gain.exponentialRampToValueAtTime(0.001, time + 0.055);
+				osc.connect(gain).connect(ctx.destination);
+				osc.start(time);
+				osc.stop(time + 0.07);
+			}
+
+			function schedule() {
+				while (nextTime < ctx.currentTime + 0.15) {
+					const b = beat;
+					playClick(nextTime, b === 0);
+					// 視覺指示：依音訊時鐘換算延遲，與音效同一時間點觸發（不用 rAF，分頁在背景時仍可用）
+					setTimeout(() => {
+						if (running) highlight(b);
+					}, Math.max(0, (nextTime - ctx.currentTime) * 1000));
+					nextTime += 60 / bpm;
+					beat = (b + 1) % beatsPerBar;
+				}
+				timer = setTimeout(schedule, 25);
+			}
+
+			function start() {
+				ctx = new (window.AudioContext || window.webkitAudioContext)();
+				nextTime = ctx.currentTime + 0.1;
+				beat = 0;
+				running = true;
+				schedule();
+				playBtn.textContent = '⏹ 停止';
+			}
+
+			function stop() {
+				running = false;
+				clearTimeout(timer);
+				ctx.close();
+				ctx = null;
+				highlight(-1);
+				playBtn.textContent = '▶ 開始';
+			}
+
+			playBtn.addEventListener('click', () => (running ? stop() : start()));
+			document.addEventListener('keydown', (e) => {
+				if (e.code === 'Space') {
+					e.preventDefault();
+					running ? stop() : start();
+				}
+			});
+
+			document.getElementById('bpm-down').addEventListener('click', () => setBpm(bpm - 1));
+			document.getElementById('bpm-up').addEventListener('click', () => setBpm(bpm + 1));
+			slider.addEventListener('input', () => setBpm(Number(slider.value)));
+			beatsSel.addEventListener('change', () => {
+				beatsPerBar = Number(beatsSel.value);
+				if (beat >= beatsPerBar) beat = 0;
+				renderDots();
+			});
+
+			// 點拍：以最後幾次點擊的平均間隔推算 BPM，超過 2 秒沒點就重新開始
+			let taps = [];
+			tapBtn.addEventListener('click', () => {
+				const t = performance.now();
+				if (taps.length && t - taps[taps.length - 1] > 2000) taps = [];
+				taps.push(t);
+				if (taps.length >= 2) {
+					const last = taps.slice(-5);
+					let sum = 0;
+					for (let i = 1; i < last.length; i++) sum += last[i] - last[i - 1];
+					setBpm(60000 / (sum / (last.length - 1)));
+				}
+			});
+
+			renderBpm();
+			renderDots();
+		</script>
+	</body>
+</html>
