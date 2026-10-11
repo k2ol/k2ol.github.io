@@ -1,0 +1,394 @@
+<!doctype html>
+<html lang="zh-Hant">
+	<head>
+		<meta charset="utf-8" />
+		<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+		<link rel="icon" href="/favicon.ico" />
+		<meta name="viewport" content="width=device-width" />
+		<title>抽籤輪盤</title>
+		<script>
+			(() => {
+				const saved = localStorage.getItem('t-theme');
+				const theme = saved || (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+				document.documentElement.dataset.theme = theme;
+			})();
+		</script>
+		<style>
+			:root {
+				--bg: #ffffff;
+				--fg: #1a1a1a;
+				--muted: #8a8a8a;
+				--btn-bg: rgba(0, 0, 0, 0.06);
+				--btn-hover: rgba(0, 0, 0, 0.12);
+				--accent: #6366f1;
+				--card: rgba(0, 0, 0, 0.04);
+			}
+			html[data-theme='dark'] {
+				--bg: #111111;
+				--fg: #f5f5f5;
+				--muted: #9a9a9a;
+				--btn-bg: rgba(255, 255, 255, 0.08);
+				--btn-hover: rgba(255, 255, 255, 0.16);
+				--accent: #8b85ff;
+				--card: rgba(255, 255, 255, 0.06);
+			}
+			body {
+				margin: 0;
+				min-height: 100vh;
+				background: var(--bg);
+				color: var(--fg);
+				font-family: system-ui, -apple-system, 'Segoe UI', 'Noto Sans TC', sans-serif;
+				display: flex;
+				flex-direction: column;
+				align-items: center;
+				gap: 1rem;
+				padding: 2.5rem 1rem 2rem;
+				box-sizing: border-box;
+				transition: background 0.3s, color 0.3s;
+				user-select: none;
+			}
+			h1 {
+				margin: 0;
+				font-size: 1.4rem;
+				color: var(--muted);
+				font-weight: 600;
+			}
+			#links {
+				position: fixed;
+				top: 1rem;
+				right: 1rem;
+				display: flex;
+				gap: 0.7rem;
+			}
+			#links a {
+				color: var(--muted);
+				text-decoration: none;
+				font-size: 1.2rem;
+			}
+			#links a:hover {
+				color: var(--fg);
+			}
+			#wheel-wrap {
+				position: relative;
+				width: min(78vw, 46vh, 480px);
+				aspect-ratio: 1;
+			}
+			#wheel {
+				width: 100%;
+				height: 100%;
+				display: block;
+				cursor: pointer;
+			}
+			#pointer {
+				position: absolute;
+				top: -0.4rem;
+				left: 50%;
+				transform: translateX(-50%);
+				width: 0;
+				height: 0;
+				border-left: 0.75rem solid transparent;
+				border-right: 0.75rem solid transparent;
+				border-top: 1.4rem solid var(--fg);
+				filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.35));
+				z-index: 2;
+			}
+			#result {
+				min-height: 2.2rem;
+				font-size: 1.35rem;
+				font-weight: 700;
+				text-align: center;
+			}
+			#result .winner {
+				color: var(--accent);
+			}
+			.row {
+				display: flex;
+				gap: 0.8rem;
+				align-items: center;
+				flex-wrap: wrap;
+				justify-content: center;
+			}
+			.row > * {
+				font: inherit;
+				padding: 0.5rem 1.1rem;
+				border-radius: 999px;
+				border: none;
+				background: var(--btn-bg);
+				color: inherit;
+				cursor: pointer;
+			}
+			.row > *:hover {
+				background: var(--btn-hover);
+			}
+			.row label {
+				display: flex;
+				align-items: center;
+				gap: 0.4rem;
+				cursor: pointer;
+			}
+			#names {
+				width: min(90vw, 26rem);
+				height: 9rem;
+				resize: vertical;
+				padding: 0.7rem 0.9rem;
+				border-radius: 0.8rem;
+				border: 1px solid var(--btn-hover);
+				background: var(--card);
+				color: inherit;
+				font: inherit;
+				font-size: 0.95rem;
+				line-height: 1.5;
+			}
+			#names:focus {
+				outline: 2px solid var(--accent);
+			}
+			.hint {
+				color: var(--muted);
+				font-size: 0.88rem;
+				margin: 0;
+			}
+		</style>
+	</head>
+	<body>
+		<div id="links">
+			<a href="/t/index.html" title="工具箱">🧰</a>
+			<a href="/" title="回首頁">🏠</a>
+		</div>
+		<h1>🎡 抽籤輪盤</h1>
+		<div id="result">點擊輪盤開始</div>
+		<div id="wheel-wrap">
+			<div id="pointer"></div>
+			<canvas id="wheel" width="640" height="640" role="button" aria-label="抽籤輪盤，點擊旋轉"></canvas>
+		</div>
+		<div class="row">
+			<button id="spin-btn">🔄 轉！</button>
+			<button id="sound-btn">音效：開</button>
+			<label><input type="checkbox" id="remove-chk" /> 抽中後移除</label>
+			<button id="reset-btn">↺ 重設</button>
+		</div>
+		<textarea id="names" spellcheck="false" aria-label="名單，每行一個">甲
+乙
+丙
+丁
+戊
+己
+庚
+辛</textarea>
+		<p class="hint">每行一個選項；點擊輪盤、按「轉！」或按空白鍵旋轉。</p>
+		<script>
+			const canvas = document.getElementById('wheel');
+			const ctx = canvas.getContext('2d');
+			const namesEl = document.getElementById('names');
+			const resultEl = document.getElementById('result');
+			const spinBtn = document.getElementById('spin-btn');
+			const soundBtn = document.getElementById('sound-btn');
+			const removeChk = document.getElementById('remove-chk');
+			const resetBtn = document.getElementById('reset-btn');
+			const DEFAULT_NAMES = '甲\n乙\n丙\n丁\n戊\n己\n庚\n辛';
+
+			const PALETTE = ['#e6532e', '#e9b824', '#3f9e4d', '#3f6ad8', '#9a4fd8', '#2e9e9b', '#d84f7e', '#7a8b2e', '#c46a1f', '#4e5ac4', '#2e8f5e', '#b03a5b'];
+			const SIZE = 640;
+			const CX = SIZE / 2;
+			const CY = SIZE / 2;
+			const R = SIZE / 2 - 10;
+			const TAU = Math.PI * 2;
+
+			let names = [];
+			let rotation = 0;
+			let spinning = false;
+			let sound = localStorage.getItem('t-sound') !== '0';
+			let audioCtx = null;
+
+			function mod(a, n) {
+				return ((a % n) + n) % n;
+			}
+
+			// 密碼學等級隨機整數 [0, n)，無模數偏差
+			function randInt(n) {
+				const limit = Math.floor(0x100000000 / n) * n;
+				const buf = new Uint32Array(1);
+				let v;
+				do {
+					crypto.getRandomValues(buf);
+					v = buf[0];
+				} while (v >= limit);
+				return v % n;
+			}
+
+			function parseNames() {
+				names = namesEl.value.split('\n').map((s) => s.trim()).filter(Boolean).slice(0, 100);
+			}
+
+			function fontFor(n) {
+				// 依「名字長度（沿半徑的可用空間）」與「段數（弧長厚度）」限制字級
+				const len = Math.max(...names.map((s) => s.length), 1);
+				const byLen = 260 / len;
+				const byCount = 300 / Math.max(n, 2);
+				return Math.max(12, Math.min(28, byLen, byCount)) + 'px system-ui, sans-serif';
+			}
+
+			function draw() {
+				const n = names.length;
+				ctx.clearRect(0, 0, SIZE, SIZE);
+				if (n === 0) {
+					ctx.beginPath();
+					ctx.arc(CX, CY, R, 0, TAU);
+					ctx.fillStyle = 'rgba(128,128,128,0.25)';
+					ctx.fill();
+					ctx.fillStyle = '#888';
+					ctx.font = '28px system-ui, sans-serif';
+					ctx.textAlign = 'center';
+					ctx.fillText('請在下方輸入選項', CX, CY);
+					return;
+				}
+				const seg = TAU / n;
+				for (let i = 0; i < n; i++) {
+					const a0 = rotation + i * seg;
+					ctx.beginPath();
+					ctx.moveTo(CX, CY);
+					ctx.arc(CX, CY, R, a0, a0 + seg);
+					ctx.closePath();
+					ctx.fillStyle = PALETTE[i % PALETTE.length];
+					ctx.fill();
+					ctx.strokeStyle = 'rgba(0,0,0,0.25)';
+					ctx.lineWidth = 1.5;
+					ctx.stroke();
+				}
+				// 文字沿半徑方向
+				ctx.fillStyle = '#fff';
+				ctx.font = 'bold ' + fontFor(n);
+				ctx.textAlign = 'right';
+				ctx.textBaseline = 'middle';
+				ctx.shadowColor = 'rgba(0,0,0,0.4)';
+				ctx.shadowBlur = 3;
+				for (let i = 0; i < n; i++) {
+					const mid = rotation + (i + 0.5) * seg;
+					ctx.save();
+					ctx.translate(CX, CY);
+					ctx.rotate(mid);
+					ctx.fillText(names[i], R - 16, 0);
+					ctx.restore();
+				}
+				ctx.shadowBlur = 0;
+				// 中心圓
+				ctx.beginPath();
+				ctx.arc(CX, CY, 34, 0, TAU);
+				ctx.fillStyle = '#fff';
+				ctx.fill();
+				ctx.strokeStyle = 'rgba(0,0,0,0.3)';
+				ctx.lineWidth = 2;
+				ctx.stroke();
+				ctx.fillStyle = '#333';
+				ctx.font = 'bold 22px system-ui, sans-serif';
+				ctx.textAlign = 'center';
+				ctx.textBaseline = 'middle';
+				ctx.fillText('轉', CX, CY + 1);
+			}
+
+			function segUnderPointer() {
+				const n = names.length;
+				if (!n) return -1;
+				return Math.floor(mod(-Math.PI / 2 - rotation, TAU) / (TAU / n));
+			}
+
+			function tick() {
+				if (!audioCtx) return;
+				const osc = audioCtx.createOscillator();
+				const gain = audioCtx.createGain();
+				osc.frequency.value = 950;
+				gain.gain.setValueAtTime(0.35, audioCtx.currentTime);
+				gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.04);
+				osc.connect(gain).connect(audioCtx.destination);
+				osc.start();
+				osc.stop(audioCtx.currentTime + 0.05);
+			}
+
+			function spin() {
+				if (spinning || names.length < 2) return;
+				spinning = true;
+				resultEl.textContent = '旋轉中…';
+				if (sound) {
+					if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+					if (audioCtx.state === 'suspended') audioCtx.resume();
+				}
+				const n = names.length;
+				const w = randInt(n);
+				const seg = TAU / n;
+				const r = 0.15 + Math.random() * 0.7;
+				const target = -Math.PI / 2 - (w + r) * seg;
+				const turns = 5 + Math.floor(Math.random() * 3);
+				const start = rotation;
+				const end = start + turns * TAU + mod(target - start, TAU);
+				const duration = 4200;
+				const t0 = performance.now();
+				let lastSeg = segUnderPointer();
+				// 用 setTimeout 步進動畫（rAF 在背景分頁不觸發）
+				(function step(now) {
+					const p = Math.min(1, (now - t0) / duration);
+					const ease = 1 - Math.pow(1 - p, 3);
+					rotation = start + (end - start) * ease;
+					if (sound) {
+						const s = segUnderPointer();
+						if (s !== lastSeg) {
+							lastSeg = s;
+							tick();
+						}
+					}
+					draw();
+					if (p < 1) {
+						setTimeout(() => step(performance.now()), 16);
+					} else {
+						rotation = mod(end, TAU);
+						spinning = false;
+						finish(w);
+					}
+				})(t0);
+			}
+
+			function finish(w) {
+				resultEl.innerHTML = '結果：<span class="winner">' + escapeHtml(names[w]) + '</span> 🎉';
+				if (removeChk.checked) {
+					names.splice(w, 1);
+					namesEl.value = names.join('\n');
+					draw();
+				}
+			}
+
+			function escapeHtml(s) {
+				const d = document.createElement('div');
+				d.textContent = s;
+				return d.innerHTML;
+			}
+
+			spinBtn.addEventListener('click', spin);
+			canvas.addEventListener('click', spin);
+			document.addEventListener('keydown', (e) => {
+				if (e.code === 'Space' && e.target.tagName !== 'TEXTAREA') {
+					e.preventDefault();
+					spin();
+				}
+			});
+			namesEl.addEventListener('input', () => {
+				parseNames();
+				if (!spinning) draw();
+			});
+			resetBtn.addEventListener('click', () => {
+				if (spinning) return;
+				namesEl.value = DEFAULT_NAMES;
+				parseNames();
+				rotation = 0;
+				resultEl.textContent = '點擊輪盤開始';
+				draw();
+			});
+			soundBtn.textContent = sound ? '音效：開' : '音效：關';
+			soundBtn.addEventListener('click', () => {
+				sound = !sound;
+				localStorage.setItem('t-sound', sound ? '1' : '0');
+				soundBtn.textContent = sound ? '音效：開' : '音效：關';
+			});
+
+			parseNames();
+			draw();
+		</script>
+	</body>
+</html>
