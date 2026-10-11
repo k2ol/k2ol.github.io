@@ -146,6 +146,54 @@
 			.deg-box input:focus {
 				outline: none;
 			}
+			#gyro-card {
+				position: absolute;
+				top: 0.8rem;
+				left: 0.8rem;
+				z-index: 10;
+				background: var(--bg);
+				border: 1px solid var(--btn-hover);
+				border-radius: 0.8rem;
+				padding: 0.6rem 0.8rem;
+				box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+				font-size: 0.9rem;
+				display: flex;
+				flex-direction: column;
+				gap: 0.45rem;
+				min-width: 11rem;
+			}
+			#gyro-card .g-row {
+				display: flex;
+				align-items: baseline;
+				gap: 0.35rem;
+			}
+			#gyro-card b {
+				font-size: 1.6rem;
+				color: var(--accent);
+				font-variant-numeric: tabular-nums;
+			}
+			#gyro-card .g-btns {
+				display: flex;
+				gap: 0.4rem;
+			}
+			#gyro-card button {
+				font: inherit;
+				font-size: 0.82rem;
+				padding: 0.3rem 0.75rem;
+				border-radius: 999px;
+				border: none;
+				background: var(--btn-bg);
+				color: inherit;
+				cursor: pointer;
+			}
+			#gyro-card button:hover {
+				background: var(--btn-hover);
+			}
+			#gyro-status {
+				color: var(--muted);
+				font-size: 0.75rem;
+				min-height: 1rem;
+			}
 			#tip {
 				text-align: center;
 				color: var(--muted);
@@ -162,6 +210,7 @@
 		</div>
 		<div id="bar">
 			<label><input type="checkbox" id="show-pin" checked /> 顯示釘住圖示</label>
+			<button id="rot-btn">↻ 順時針轉 90°</button>
 			<button id="zero-btn">⊙ 臂歸 90°</button>
 			<button id="cam-btn">📷 相機背景</button>
 			<span id="cam-tip"></span>
@@ -171,8 +220,16 @@
 			<canvas id="cv"></canvas>
 			<div class="deg-box" id="box-left"><input type="number" id="deg-left" min="0" max="180" value="90" /><span>左刻度</span></div>
 			<div class="deg-box" id="box-right"><span>右刻度</span><input type="number" id="deg-right" min="0" max="180" value="90" /></div>
+			<div id="gyro-card">
+				<div class="g-row">📱 仰角<b id="gyro-val">--</b><span>°</span></div>
+				<div class="g-btns">
+					<button id="gyro-enable">⚡ 啟用</button>
+					<button id="gyro-zero">⊙ 歸零</button>
+				</div>
+				<div id="gyro-status">手機長邊貼齊斜面，平放為 0°</div>
+			</div>
 		</div>
-		<div id="tip">拖動紅色圖釘定頂點，拖動臂端圓點旋轉量角臂；也可直接輸入左／右刻度角度。半透明量角器可對著螢幕上的物件比對，或開相機背景對準實物。</div>
+		<div id="tip">拖動紅色圖釘定頂點，拖動臂端圓點旋轉量角臂；也可直接輸入左／右刻度角度。「↻ 順時針轉 90°」可旋轉量角器本體對準不同方向。</div>
 		<script>
 			const stage = document.getElementById('stage');
 			const cv = document.getElementById('cv');
@@ -186,22 +243,26 @@
 			const camBtn = document.getElementById('cam-btn');
 			const camTip = document.getElementById('cam-tip');
 
-			// 狀態：pin=頂點，theta=量角臂角度（0°朝右、90°朝上、180°朝左）
+			// 狀態：pin=頂點、theta=臂在量角器刻度上的讀數（0°朝量角器右側、90°垂直、180°朝左側）
+			// rot=量角器本體順時針旋轉角（0/90/180/270），螢幕方向 = 讀數方向 − rot
 			let W = 0,
 				H = 0;
 			let center = { x: 0, y: 0 };
 			let R = 200;
 			let pin = { x: 0, y: 0 };
 			let theta = 90;
+			let rot = 0;
 			let drag = null; // 'pin' | 'handle' | null
 			let stream = null;
+
+			// 方向向量：φ 為相對 +x 逆時針（螢幕 y 向上為正）
+			const dir = (phi) => ({ x: Math.cos((phi * Math.PI) / 180), y: -Math.sin((phi * Math.PI) / 180) });
 
 			function resize() {
 				W = stage.clientWidth;
 				H = stage.clientHeight;
 				cv.width = W;
 				cv.height = H;
-				center = { x: W / 2, y: Math.min(H * 0.78, H - R - 8) };
 				R = Math.min(W * 0.44, H * 0.6);
 				center = { x: W / 2, y: Math.min(H * 0.78, H - 8) };
 				if (!pin.x) pin = { x: center.x, y: center.y };
@@ -214,14 +275,16 @@
 				return R * 1.04;
 			}
 			function armEnd() {
-				return { x: pin.x + Math.cos((theta * Math.PI) / 180) * armLen(), y: pin.y - Math.sin((theta * Math.PI) / 180) * armLen() };
+				const d = dir(theta - rot);
+				return { x: pin.x + d.x * armLen(), y: pin.y + d.y * armLen() };
 			}
 
 			function layoutBoxes() {
-				boxL.style.left = Math.max(60, center.x - R * 0.72) + 'px';
-				boxL.style.top = center.y + 26 + 'px';
-				boxR.style.left = Math.min(W - 60, center.x + R * 0.72) + 'px';
-				boxR.style.top = center.y + 26 + 'px';
+				const base = dir(-rot); // 量角器 0° 方向（即基線正右方）
+				boxL.style.left = Math.max(60, center.x - base.x * R * 0.72) + 'px';
+				boxL.style.top = center.y - base.y * R * 0.72 + 26 + 'px';
+				boxR.style.left = Math.min(W - 60, center.x + base.x * R * 0.72) + 'px';
+				boxR.style.top = center.y + base.y * R * 0.72 + 26 + 'px';
 			}
 
 			function themeColors() {
@@ -239,43 +302,44 @@
 			function draw() {
 				ctx.clearRect(0, 0, W, H);
 				const c = themeColors();
-				// --- 量角器本體（半透明半圓） ---
+				// --- 量角器本體（半透明半圓，隨 rot 順時針旋轉） ---
+				// canvas arc 角度 = −φ；量角器涵蓋 φ ∈ [−rot, 180−rot]
 				ctx.beginPath();
-				ctx.arc(center.x, center.y, R, Math.PI, 2 * Math.PI);
+				ctx.arc(center.x, center.y, R, -(180 - rot) * Math.PI / 180, -(-rot) * Math.PI / 180, false);
 				ctx.closePath();
 				ctx.fillStyle = c.fill;
 				ctx.fill();
 				ctx.strokeStyle = c.minor;
 				ctx.lineWidth = 1.5;
 				ctx.stroke();
-				// 刻度：每 1°，5° 中刻度，10° 主刻度＋數字
+				// 刻度
 				ctx.font = '13px system-ui, sans-serif';
 				ctx.textAlign = 'center';
 				ctx.textBaseline = 'middle';
 				for (let a = 0; a <= 180; a++) {
-					const rad = (a * Math.PI) / 180;
-					const dx = Math.cos(rad);
-					const dy = -Math.sin(rad);
+					const d = dir(a - rot);
 					const major = a % 10 === 0;
 					const mid = a % 5 === 0;
 					const len = major ? 18 : mid ? 12 : 7;
 					ctx.strokeStyle = major ? c.major : c.minor;
 					ctx.lineWidth = major ? 1.8 : 1;
 					ctx.beginPath();
-					ctx.moveTo(center.x + dx * R, center.y + dy * R);
-					ctx.lineTo(center.x + dx * (R - len), center.y + dy * (R - len));
+					ctx.moveTo(center.x + d.x * R, center.y + d.y * R);
+					ctx.lineTo(center.x + d.x * (R - len), center.y + d.y * (R - len));
 					ctx.stroke();
 					if (major) {
 						ctx.fillStyle = c.text;
-						ctx.fillText(String(a), center.x + dx * (R - 32), center.y + dy * (R - 32));
+						ctx.fillText(String(a), center.x + d.x * (R - 32), center.y + d.y * (R - 32));
 					}
 				}
 				// 基線（直徑）與延伸
+				const b1 = dir(-rot);
+				const b2 = dir(180 - rot);
 				ctx.strokeStyle = c.minor;
 				ctx.lineWidth = 1.5;
 				ctx.beginPath();
-				ctx.moveTo(center.x - R - 14, center.y);
-				ctx.lineTo(center.x + R + 14, center.y);
+				ctx.moveTo(center.x + b1.x * (R + 14), center.y + b1.y * (R + 14));
+				ctx.lineTo(center.x + b2.x * (R + 14), center.y + b2.y * (R + 14));
 				ctx.stroke();
 				// 中心十字
 				ctx.beginPath();
@@ -292,7 +356,6 @@
 				ctx.moveTo(pin.x, pin.y);
 				ctx.lineTo(end.x, end.y);
 				ctx.stroke();
-				// 臂端拖點
 				ctx.beginPath();
 				ctx.arc(end.x, end.y, 9, 0, Math.PI * 2);
 				ctx.fillStyle = c.line;
@@ -323,7 +386,6 @@
 				draw();
 			}
 
-			// 輸入角度（左刻度輸入的是 180−θ）
 			function onDegInput(e) {
 				const v = Number(e.target.value);
 				if (Number.isNaN(v) || v < 0 || v > 180) return;
@@ -332,7 +394,7 @@
 			degL.addEventListener('input', onDegInput);
 			degR.addEventListener('input', onDegInput);
 
-			// --- 拖曳（pin / 臂端） ---
+			// --- 拖曳 ---
 			function ptr(e) {
 				const r = cv.getBoundingClientRect();
 				return { x: ((e.clientX - r.left) / r.width) * W, y: ((e.clientY - r.top) / r.height) * H };
@@ -352,8 +414,10 @@
 				if (drag === 'pin') {
 					pin = { x: Math.max(4, Math.min(W - 4, p.x)), y: Math.max(4, Math.min(H - 4, p.y)) };
 				} else {
-					let t = (Math.atan2(pin.y - p.y, p.x - pin.x) * 180) / Math.PI;
-					t = Math.max(0, Math.min(180, t));
+					// 螢幕方向 φp 換算回量角器讀數：θ = φp + rot（夾在 0–180）
+					const phiP = (Math.atan2(pin.y - p.y, p.x - pin.x) * 180) / Math.PI;
+					let t = (((phiP + rot) % 360) + 360) % 360;
+					if (t > 180) t = 360 - t;
 					theta = Math.round(t * 10) / 10;
 					degR.value = Math.round(theta);
 					degL.value = 180 - Math.round(theta);
@@ -367,6 +431,11 @@
 			document.getElementById('zero-btn').addEventListener('click', () => {
 				pin = { x: center.x, y: center.y };
 				setTheta(90);
+			});
+			document.getElementById('rot-btn').addEventListener('click', () => {
+				rot = (rot + 90) % 360;
+				layoutBoxes();
+				draw();
 			});
 
 			// --- 相機背景 ---
@@ -396,6 +465,54 @@
 				camBtn.classList.remove('cam-on');
 			}
 			camBtn.addEventListener('click', () => (stream ? (stopCam(), document.exitFullscreen?.().catch(() => {})) : startCam()));
+
+			// --- 陀螺儀測仰角 ---
+			const gyroVal = document.getElementById('gyro-val');
+			const gyroStatus = document.getElementById('gyro-status');
+			let gyroZero = 0;
+			let curElev = null;
+
+			function normElev(beta) {
+				// beta：0 平放、90 立正，超出折返，取 0–90
+				let b = ((beta % 360) + 360) % 360;
+				if (b <= 90) return b;
+				if (b <= 180) return 180 - b;
+				if (b <= 270) return b - 180;
+				return 360 - b;
+			}
+
+			function onOrient(e) {
+				if (e.beta === null && e.gamma === null) return;
+				curElev = normElev(e.beta ?? 0);
+				gyroVal.textContent = (Math.round((curElev - gyroZero) * 10) / 10).toFixed(1);
+			}
+
+			async function enableGyro() {
+				try {
+					if (typeof DeviceOrientationEvent === 'undefined' || !window.DeviceOrientationEvent) {
+						gyroStatus.textContent = '此裝置不支援動作感測器';
+						return;
+					}
+					if (DeviceOrientationEvent.requestPermission) {
+						const res = await DeviceOrientationEvent.requestPermission();
+						if (res !== 'granted') {
+							gyroStatus.textContent = '未授權，請再按一次「啟用」並允許';
+							return;
+						}
+					}
+					window.addEventListener('deviceorientation', onOrient);
+					gyroStatus.textContent = '感測中…';
+				} catch (err) {
+					gyroStatus.textContent = '無法啟用：' + err.message;
+				}
+			}
+
+			document.getElementById('gyro-enable').addEventListener('click', enableGyro);
+			document.getElementById('gyro-zero').addEventListener('click', () => {
+				if (curElev === null) return;
+				gyroZero = curElev;
+				gyroVal.textContent = '0.0';
+			});
 
 			resize();
 			setTheta(90);
