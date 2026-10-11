@@ -23,6 +23,8 @@
 				--accent: #6366f1;
 				--card: rgba(0, 0, 0, 0.04);
 				--ok: #22a55b;
+				--p1: #6366f1;
+				--p2: #e6532e;
 			}
 			html[data-theme='dark'] {
 				--bg: #111111;
@@ -101,27 +103,64 @@
 				font-size: 0.95rem;
 				flex-wrap: wrap;
 				justify-content: center;
+				align-items: baseline;
 			}
 			.stats b {
 				color: var(--fg);
 				font-variant-numeric: tabular-nums;
 			}
-			.stats .turn-on {
-				color: var(--accent);
-				font-weight: 700;
-			}
-			#gcards {
+			#arena {
 				display: flex;
-				gap: 0.7rem;
+				gap: 1.2rem;
 				flex-wrap: wrap;
 				justify-content: center;
-				min-height: 7.6rem;
-				align-items: stretch;
+				width: 100%;
+			}
+			.pzone {
+				display: flex;
+				flex-direction: column;
+				align-items: center;
+				gap: 0.6rem;
+				padding: 0.8rem 0.9rem;
+				border-radius: 1rem;
+				border: 2px solid transparent;
+				transition: border-color 0.3s, opacity 0.3s;
+			}
+			.pzone.winner {
+				border-color: var(--ok);
+			}
+			.pzone.lost {
+				opacity: 0.45;
+			}
+			.pname {
+				font-weight: 700;
+				color: var(--muted);
+				display: flex;
+				align-items: baseline;
+				gap: 0.5rem;
+			}
+			.pname .pscore {
+				font-size: 1.3rem;
+				color: var(--fg);
+				font-variant-numeric: tabular-nums;
+			}
+			#zone1 .pname {
+				color: var(--p1);
+			}
+			#zone2 .pname {
+				color: var(--p2);
+			}
+			.gcards {
+				display: flex;
+				gap: 0.55rem;
+				flex-wrap: wrap;
+				justify-content: center;
+				min-height: 6.6rem;
 			}
 			.gcard {
-				width: 5rem;
-				min-height: 7rem;
-				border-radius: 0.7rem;
+				width: 4.2rem;
+				min-height: 6rem;
+				border-radius: 0.6rem;
 				background: #fdfdfb;
 				border: 2px solid #d8d8d2;
 				box-shadow: 0 4px 10px rgba(0, 0, 0, 0.12);
@@ -132,7 +171,7 @@
 				cursor: pointer;
 				transition: transform 0.15s, border-color 0.15s, box-shadow 0.15s;
 				position: relative;
-				padding: 0.3rem;
+				padding: 0.25rem;
 				box-sizing: border-box;
 			}
 			html[data-theme='dark'] .gcard {
@@ -140,82 +179,94 @@
 				border-color: #3a3a42;
 			}
 			.gcard:hover {
-				transform: translateY(-0.25rem);
+				transform: translateY(-0.2rem);
 			}
 			.gcard.sel {
 				border-color: var(--accent);
-				box-shadow: 0 0 0 3px var(--accent), 0 6px 14px rgba(0, 0, 0, 0.2);
-				transform: translateY(-0.35rem);
-			}
-			.gcard.win {
-				border-color: var(--ok);
-				box-shadow: 0 0 0 3px var(--ok);
+				box-shadow: 0 0 0 3px var(--accent);
+				transform: translateY(-0.3rem);
 			}
 			.gcard .rank {
-				font-size: 2rem;
+				font-size: 1.6rem;
 				font-weight: 800;
 				line-height: 1.1;
 			}
 			.gcard .val {
-				font-size: 1.7rem;
+				font-size: 1.4rem;
 				font-weight: 800;
 				line-height: 1.1;
 				font-variant-numeric: tabular-nums;
 			}
 			.gcard .expr {
-				font-size: 0.62rem;
+				font-size: 0.55rem;
 				color: var(--muted);
 				max-width: 100%;
 				overflow: hidden;
 				text-overflow: ellipsis;
 				white-space: nowrap;
-				margin-top: 0.25rem;
 			}
 			.gcard .sub {
-				font-size: 0.7rem;
+				font-size: 0.62rem;
 				color: var(--muted);
 			}
 			.gcard .corner {
 				position: absolute;
-				top: 0.25rem;
-				left: 0.4rem;
-				font-size: 0.7rem;
+				top: 0.2rem;
+				left: 0.35rem;
+				font-size: 0.62rem;
 				color: var(--muted);
 			}
-			#ops {
+			.pops {
 				display: flex;
-				gap: 0.9rem;
+				gap: 0.7rem;
 			}
-			#ops button {
-				font-size: 1.5rem;
+			.pops button {
+				font-size: 1.2rem;
 				font-weight: 800;
-				width: 3.4rem;
-				height: 3.4rem;
+				width: 2.9rem;
+				height: 2.9rem;
 				border-radius: 50%;
 				border: none;
 				background: var(--btn-bg);
 				color: inherit;
 				cursor: pointer;
 			}
-			#ops button:hover {
+			.pops button:hover {
 				background: var(--btn-hover);
+			}
+			.pbtns {
+				display: flex;
+				gap: 0.5rem;
+			}
+			.pbtns button {
+				font: inherit;
+				font-size: 0.85rem;
+				padding: 0.35rem 0.9rem;
+				border-radius: 999px;
+				border: none;
+				background: var(--btn-bg);
+				color: inherit;
+				cursor: pointer;
+			}
+			.pbtns button:hover {
+				background: var(--btn-hover);
+			}
+			.pbtns button:disabled {
+				opacity: 0.4;
+				cursor: not-allowed;
 			}
 			#tip {
 				min-height: 2.4rem;
 				font-size: 1.05rem;
 				font-weight: 700;
 				text-align: center;
-				max-width: 90vw;
+				max-width: 92vw;
 			}
 			#tip .good {
 				color: var(--ok);
 			}
 			#tip .ans {
 				color: var(--accent);
-			}
-			#controls button:disabled {
-				opacity: 0.4;
-				cursor: not-allowed;
 			}
 		</style>
 	</head>
@@ -230,17 +281,12 @@
 			<button id="mode-duel">⚔️ 雙人對戰</button>
 		</div>
 		<div class="stats" id="stats"></div>
-		<div id="gcards"></div>
-		<div id="ops">
-			<button data-op="+" aria-label="加">＋</button>
-			<button data-op="-" aria-label="減">－</button>
-			<button data-op="*" aria-label="乘">×</button>
-			<button data-op="/" aria-label="除">÷</button>
+		<div id="arena">
+			<div id="zone1"></div>
+			<div id="zone2"></div>
 		</div>
 		<div id="tip"></div>
 		<div class="row" id="controls">
-			<button id="undo-btn">↩ 復原</button>
-			<button id="restart-btn">🔁 重排本題</button>
 			<button id="answer-btn">💡 顯示答案</button>
 			<button id="next-btn">⏭ 下一題</button>
 		</div>
@@ -268,7 +314,6 @@
 			const fIs24 = (v) => v.n === 24 && v.d === 1;
 			const fStr = (v) => (v.d === 1 ? String(v.n) : v.n + '/' + v.d);
 
-			// ---------- 求解器（Fisher–Yates 同等公平性用於產題） ----------
 			function randInt(n) {
 				const limit = Math.floor(0x100000000 / n) * n;
 				const buf = new Uint32Array(1);
@@ -280,17 +325,17 @@
 				return v % n;
 			}
 
-			// 回傳所有能湊出 24 的式子（至少一個代表可解）
+			// 找到一個能湊出 24 的式子（產題與顯示答案用）
 			function solve24(nums) {
-				const res = [];
+				const found = [];
 				const rec = (list) => {
-					if (res.length > 0) return; // 找到一個就夠（產題／提示用）
+					if (found.length) return;
 					if (list.length === 1) {
-						if (fIs24(list[0].v)) res.push(list[0].e);
+						if (fIs24(list[0].v)) found.push(list[0].e);
 						return;
 					}
-					for (let i = 0; i < list.length && res.length === 0; i++) {
-						for (let j = 0; j < list.length && res.length === 0; j++) {
+					for (let i = 0; i < list.length && !found.length; i++) {
+						for (let j = 0; j < list.length && !found.length; j++) {
 							if (i === j) continue;
 							const rest = list.filter((_, k) => k !== i && k !== j);
 							const a = list[i];
@@ -307,29 +352,177 @@
 					}
 				};
 				rec(nums.map((n) => ({ v: F(n, 1), e: String(n) })));
-				return res;
+				return found;
 			}
 
-			// ---------- 遊戲狀態 ----------
-			const gcardsEl = document.getElementById('gcards');
+			// ---------- 玩家面板 ----------
+			const RANKVAL = ['A', '2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K'];
+			const OP_SYM = { '+': '＋', '-': '－', '*': '×', '/': '÷' };
+
+			class Player {
+				constructor(rootEl, name, api) {
+					this.root = rootEl;
+					this.name = name;
+					this.api = api;
+					this.cards = [];
+					this.history = [];
+					this.sel = null;
+					this.op = null;
+					this.done = false;
+					rootEl.className = 'pzone';
+					rootEl.innerHTML = `
+						<div class="pname"><span class="plabel">${name}</span><span class="pscore"></span></div>
+						<div class="gcards"></div>
+						<div class="pops">
+							<button data-op="+" aria-label="加">＋</button>
+							<button data-op="-" aria-label="減">－</button>
+							<button data-op="*" aria-label="乘">×</button>
+							<button data-op="/" aria-label="除">÷</button>
+						</div>
+						<div class="pbtns">
+							<button class="p-undo">↩ 復原</button>
+							<button class="p-restart">🔁 重排</button>
+						</div>`;
+					this.labelEl = rootEl.querySelector('.plabel');
+					this.cardsEl = rootEl.querySelector('.gcards');
+					this.scoreEl = rootEl.querySelector('.pscore');
+					rootEl.querySelectorAll('.pops button').forEach((b) => {
+						b.addEventListener('click', () => this.pickOp(b.dataset.op));
+					});
+					rootEl.querySelector('.p-undo').addEventListener('click', () => this.undo());
+					rootEl.querySelector('.p-restart').addEventListener('click', () => this.deal(api.nums()));
+				}
+
+				setScore(s) {
+					this.scoreEl.textContent = s;
+				}
+
+				deal(nums) {
+					this.cards = nums.map((n) => ({ v: F(n, 1), expr: String(n), origin: n }));
+					this.history = [];
+					this.sel = null;
+					this.op = null;
+					this.done = false;
+					this.root.classList.remove('winner', 'lost');
+					this.render();
+				}
+
+				cardLabel(c) {
+					return c.origin !== null ? RANKVAL[c.origin - 1] : fStr(c.v);
+				}
+
+				render() {
+					this.cardsEl.innerHTML = '';
+					this.cards.forEach((c, i) => {
+						const d = document.createElement('div');
+						d.className = 'gcard' + (i === this.sel ? ' sel' : '');
+						if (c.origin !== null) {
+							const corner = document.createElement('span');
+							corner.className = 'corner';
+							corner.textContent = i + 1;
+							const rank = document.createElement('span');
+							rank.className = 'rank';
+							rank.textContent = RANKVAL[c.origin - 1];
+							d.append(corner, rank);
+							if (RANKVAL[c.origin - 1] !== String(c.origin)) {
+								const s = document.createElement('span');
+								s.className = 'sub';
+								s.textContent = '= ' + c.origin;
+								d.append(s);
+							}
+						} else {
+							const val = document.createElement('span');
+							val.className = 'val';
+							val.textContent = fStr(c.v);
+							const ex = document.createElement('span');
+							ex.className = 'expr';
+							ex.textContent = c.expr;
+							d.append(val, ex);
+						}
+						d.addEventListener('click', () => this.onCard(i));
+						this.cardsEl.append(d);
+					});
+					this.root.querySelector('.p-undo').disabled = this.history.length === 0;
+				}
+
+				onCard(i) {
+					if (this.api.locked() || this.done) return;
+					if (this.sel === null || this.op === null) {
+						this.sel = i;
+						this.op = null;
+						this.render();
+						this.api.hint(this, '選一個運算符（＋－×÷）');
+						return;
+					}
+					if (i === this.sel) return;
+					this.merge(this.sel, this.op, i);
+				}
+
+				pickOp(op) {
+					if (this.api.locked() || this.done) return;
+					if (this.sel === null) {
+						this.api.hint(this, '先點一張牌');
+						return;
+					}
+					this.op = op;
+					this.api.hint(this, '再點另一張牌，與「' + this.cardLabel(this.cards[this.sel]) + '」做 ' + OP_SYM[op]);
+				}
+
+				merge(i, op, j) {
+					const a = this.cards[i];
+					const b = this.cards[j];
+					let v = null;
+					try {
+						if (op === '+') v = fAdd(a.v, b.v);
+						else if (op === '-') v = fSub(a.v, b.v);
+						else if (op === '*') v = fMul(a.v, b.v);
+						else v = fDiv(a.v, b.v);
+					} catch (e) {
+						v = null;
+					}
+					if (!v) {
+						this.api.hint(this, '不能除以零，換個算法吧');
+						return;
+					}
+					this.history.push(JSON.stringify(this.cards));
+					const merged = { v, expr: '(' + a.expr + OP_SYM[op] + b.expr + ')', origin: null };
+					this.cards = this.cards.filter((_, k) => k !== i && k !== j);
+					this.cards.push(merged);
+					this.sel = null;
+					this.op = null;
+					this.render();
+					if (this.cards.length === 1) {
+						if (fIs24(this.cards[0].v)) {
+							this.done = true;
+							this.api.onWin(this);
+						} else {
+							this.api.onFail(this, fStr(this.cards[0].v));
+						}
+						return;
+					}
+					this.api.hint(this, '得到 ' + fStr(v) + '，繼續組合！');
+				}
+
+				undo() {
+					if (this.api.locked() || this.done || !this.history.length) return;
+					this.cards = JSON.parse(this.history.pop());
+					this.sel = null;
+					this.op = null;
+					this.render();
+				}
+			}
+
+			// ---------- 遊戲主控 ----------
 			const tipEl = document.getElementById('tip');
 			const statsEl = document.getElementById('stats');
-			const undoBtn = document.getElementById('undo-btn');
-			const RANK = null; // RANKVAL[v-1] 對應牌值 v 的花色字
-			const RANKVAL = ['A', '2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K'];
 
 			let mode = 'single';
-			let nums = []; // 本題四個數字
-			let cards = []; // { v:{n,d}, expr, origin:null|index }
-			let history = [];
-			let sel = null;
-			let pendOp = null;
-			let solved = false;
+			let nums = [];
 			let puzzleNo = 0;
 			let wins = 0;
 			let streak = 0;
 			let scores = [0, 0];
-			let turn = 0;
+			let raceOver = false;
 			let puzzleStart = 0;
 			let timerId = null;
 			let finalTime = '';
@@ -339,197 +532,89 @@
 				return String(Math.floor(s / 60)).padStart(2, '0') + ':' + String(s % 60).padStart(2, '0');
 			}
 
-			function renderStats() {
-				const t = solved ? finalTime : fmtTime(Date.now() - puzzleStart);
-				if (mode === 'single') {
-					statsEl.innerHTML =
-						'⏱ <b>' + t + '</b><span>第 <b>' + puzzleNo + '</b> 題</span><span>答對 <b>' + wins + '</b></span><span>連中 <b>' + streak + '</b></span>';
-				} else {
-					statsEl.innerHTML =
-						'<span class="' + (turn === 0 ? 'turn-on' : '') + '">玩家一 <b>' + scores[0] + '</b></span>' +
-						'<b>' + t + '</b>' +
-						'<span class="' + (turn === 1 ? 'turn-on' : '') + '">玩家二 <b>' + scores[1] + '</b></span>' +
-						'<span>第 <b>' + puzzleNo + '</b> 題</span><span>輪到 <b>' + (turn === 0 ? '玩家一' : '玩家二') + '</b></span>';
-				}
-			}
-			function startTimer() {
-				clearInterval(timerId);
-				puzzleStart = Date.now();
-				timerId = setInterval(renderStats, 250);
-			}
-
-			function newPuzzle(switchTurn) {
-				for (let attempt = 0; attempt < 300; attempt++) {
-					const cand = Array.from({ length: 4 }, () => 1 + randInt(13));
-					if (solve24(cand.slice()).length) {
-						nums = cand;
-						break;
-					}
-					if (attempt === 299) nums = [2, 3, 4, 6];
-				}
-				if (switchTurn && mode === 'duel') turn = 1 - turn;
-				puzzleNo++;
-				cards = nums.map((n) => ({ v: F(n, 1), expr: String(n), origin: n }));
-				history = [];
-				sel = null;
-				pendOp = null;
-				solved = false;
-				finalTime = '';
-				renderCards();
-				renderStats();
-				startTimer();
-				tipEl.textContent = '先點一張牌，再按運算符，然後點另一張牌';
-			}
-
-			function cardLabel(c) {
-				return c.origin !== null ? RANKVAL[c.origin - 1] : fStr(c.v);
-			}
-
-			function renderCards() {
-				gcardsEl.innerHTML = '';
-				cards.forEach((c, i) => {
-					const d = document.createElement('div');
-					d.className = 'gcard' + (i === sel ? ' sel' : '') + (solved && cards.length === 1 ? ' win' : '');
-					if (c.origin !== null) {
-						const corner = document.createElement('span');
-						corner.className = 'corner';
-						corner.textContent = i + 1;
-						const rank = document.createElement('span');
-						rank.className = 'rank';
-						rank.textContent = RANKVAL[c.origin - 1];
-						d.append(corner, rank);
-						if (RANKVAL[c.origin - 1] !== String(c.origin)) {
-							const s = document.createElement('span');
-							s.className = 'sub';
-							s.textContent = '= ' + c.origin;
-							d.append(s);
-						}
-					} else {
-						const val = document.createElement('span');
-						val.className = 'val';
-						val.textContent = fStr(c.v);
-						const ex = document.createElement('span');
-						ex.className = 'expr';
-						ex.textContent = c.expr;
-						d.append(val, ex);
-					}
-					d.addEventListener('click', () => onCard(i));
-					gcardsEl.append(d);
-				});
-				undoBtn.disabled = history.length === 0 || solved;
-			}
-
-			function onCard(i) {
-				if (solved) return;
-				if (sel === null || pendOp === null) {
-					sel = i;
-					pendOp = null;
-					renderCards();
-					tipEl.textContent = '選一個運算符（＋－×÷）';
-					return;
-				}
-				if (i === sel) return;
-				doMerge(sel, pendOp, i);
-			}
-
-			document.querySelectorAll('#ops button').forEach((b) => {
-				b.addEventListener('click', () => {
-					if (solved) return;
-					if (sel === null) {
-						tipEl.textContent = '先點一張牌';
-						return;
-					}
-					pendOp = b.dataset.op;
-					const sym = { '+': '＋', '-': '－', '*': '×', '/': '÷' }[pendOp];
-					tipEl.textContent = '再點另一張牌，與「' + cardLabel(cards[sel]) + '」做 ' + sym;
-				});
-			});
-
-			function doMerge(i, op, j) {
-				const a = cards[i];
-				const b = cards[j];
-				let v;
-				const sym = { '+': '+', '-': '−', '*': '×', '/': '÷' }[op];
-				try {
-					if (op === '+') v = fAdd(a.v, b.v);
-					else if (op === '-') v = fSub(a.v, b.v);
-					else if (op === '*') v = fMul(a.v, b.v);
-					else v = fDiv(a.v, b.v);
-				} catch (e) {
-					v = null;
-				}
-				if (!v) {
-					tipEl.textContent = '不能除以零，換個算法吧';
-					return;
-				}
-				history.push(JSON.stringify(cards));
-				const merged = { v, expr: '(' + a.expr + sym + b.expr + ')', origin: null };
-				cards = cards.filter((_, k) => k !== i && k !== j);
-				cards.push(merged);
-				sel = null;
-				pendOp = null;
-				renderCards();
-				if (cards.length === 1) {
-					if (fIs24(cards[0].v)) {
-						solved = true;
-						finalTime = fmtTime(Date.now() - puzzleStart);
-						clearInterval(timerId);
-						renderCards();
-						if (mode === 'single') {
-							wins++;
-							streak++;
-							renderStats();
-							tipEl.innerHTML = '<span class="good">🎉 答對！' + escapeHtml(cards[0].expr) + ' = 24　用時 ' + finalTime + '</span>';
-						} else {
-							scores[turn]++;
-							renderStats();
-							tipEl.innerHTML =
-								'<span class="good">🎉 ' + (turn === 0 ? '玩家一' : '玩家二') + '得分！' + escapeHtml(cards[0].expr) + ' = 24　用時 ' + finalTime + '</span>';
-						}
-						return;
-					}
-					tipEl.textContent = '最後得到 ' + fStr(cards[0].v) + '，不是 24。可「復原」換算法，或「下一題」';
-					return;
-				}
-				tipEl.textContent = '得到 ' + fStr(v) + '，繼續組合！';
-			}
-
 			function escapeHtml(s) {
 				const d = document.createElement('div');
 				d.textContent = s;
 				return d.innerHTML;
 			}
 
-			undoBtn.addEventListener('click', () => {
-				if (!history.length || solved) return;
-				cards = JSON.parse(history.pop());
-				sel = null;
-				pendOp = null;
-				renderCards();
-				tipEl.textContent = '已復原上一步';
-			});
-			document.getElementById('restart-btn').addEventListener('click', () => {
-				if (solved) return;
-				cards = nums.map((n) => ({ v: F(n, 1), expr: String(n), origin: n }));
-				history = [];
-				sel = null;
-				pendOp = null;
-				renderCards();
+			const api = {
+				nums: () => nums,
+				locked: () => raceOver,
+				hint: (p, msg) => {
+					if (!raceOver) tipEl.textContent = (mode === 'duel' ? p.name + '：' : '') + msg;
+				},
+				onWin: (p) => {
+					if (raceOver) return;
+					raceOver = true;
+					finalTime = fmtTime(Date.now() - puzzleStart);
+					clearInterval(timerId);
+					const expr = escapeHtml(p.cards[0].expr);
+					if (mode === 'single') {
+						wins++;
+						streak++;
+						p.root.classList.add('winner');
+						renderStats();
+						tipEl.innerHTML = '<span class="good">🎉 答對！' + expr + ' = 24　用時 ' + finalTime + '</span>';
+					} else {
+						const idx = p === p1 ? 0 : 1;
+						scores[idx]++;
+						p.root.classList.add('winner');
+						(idx === 0 ? p2 : p1).root.classList.add('lost');
+						renderStats();
+						tipEl.innerHTML =
+							'<span class="good">🎉 ' + p.name + '搶先答對！' + expr + ' = 24　用時 ' + finalTime + '</span>';
+					}
+				},
+				onFail: (p, val) => {
+					if (raceOver) return;
+					tipEl.textContent = (mode === 'duel' ? p.name + ' ' : '') + '最後得到 ' + val + '，不是 24，可「復原」換算法';
+				},
+			};
+
+			const p1 = new Player(document.getElementById('zone1'), '玩家一', api);
+			const p2 = new Player(document.getElementById('zone2'), '玩家二', api);
+
+			function genNums() {
+				for (let attempt = 0; attempt < 300; attempt++) {
+					const cand = Array.from({ length: 4 }, () => 1 + randInt(13));
+					if (solve24(cand.slice()).length) return cand;
+				}
+				return [2, 3, 4, 6];
+			}
+
+			function startTimer() {
+				clearInterval(timerId);
+				puzzleStart = Date.now();
+				timerId = setInterval(renderStats, 250);
+			}
+
+			function renderStats() {
+				const t = raceOver ? finalTime : fmtTime(Date.now() - puzzleStart);
+				if (mode === 'single') {
+					statsEl.innerHTML =
+						'⏱ <b>' + t + '</b><span>第 <b>' + puzzleNo + '</b> 題</span><span>答對 <b>' + wins + '</b></span><span>連中 <b>' + streak + '</b></span>';
+				} else {
+					statsEl.innerHTML =
+						'<span style="color:var(--p1)">玩家一 <b>' + scores[0] + '</b></span>' +
+						'<b>' + t + '</b>' +
+						'<span style="color:var(--p2)">玩家二 <b>' + scores[1] + '</b></span>' +
+						'<span>第 <b>' + puzzleNo + '</b> 題</span>' +
+						'<span>同時開始，比誰先湊出 24</span>';
+				}
+			}
+
+			function startRound() {
+				nums = genNums();
+				puzzleNo++;
+				raceOver = false;
+				p1.deal(nums);
+				p2.deal(nums);
+				renderStats();
 				startTimer();
-				tipEl.textContent = '已重排本題，計時重新開始';
-			});
-			document.getElementById('answer-btn').addEventListener('click', () => {
-				const sols = solve24(nums.slice());
-				tipEl.innerHTML = sols.length
-					? '答案：<span class="ans">' + escapeHtml(sols[0]) + ' = 24</span>（括號順序就是點牌順序）'
-					: '這題無解？不可能，題目都是驗證過的';
-			});
-			document.getElementById('next-btn').addEventListener('click', () => {
-				if (mode === 'single' && !solved) streak = 0;
-				newPuzzle(true);
-			});
-			document.getElementById('mode-single').addEventListener('click', () => setMode('single'));
-			document.getElementById('mode-duel').addEventListener('click', () => setMode('duel'));
+				tipEl.textContent = mode === 'duel' ? '兩邊同時開始，搶先湊出 24！' : '先點一張牌，再按運算符，然後點另一張牌';
+			}
+
 			function setMode(m) {
 				mode = m;
 				document.getElementById('mode-single').className = m === 'single' ? 'mode-on' : '';
@@ -538,9 +623,32 @@
 				wins = 0;
 				streak = 0;
 				scores = [0, 0];
-				turn = 0;
-				newPuzzle(false);
+				if (m === 'single') {
+					p1.labelEl.textContent = '練習';
+					p1.setScore('');
+					p2.root.style.display = 'none';
+				} else {
+					p1.labelEl.textContent = '玩家一';
+					p1.setScore('0');
+					p2.root.style.display = '';
+					p2.setScore('0');
+				}
+				startRound();
 			}
+
+			document.getElementById('mode-single').addEventListener('click', () => setMode('single'));
+			document.getElementById('mode-duel').addEventListener('click', () => setMode('duel'));
+			document.getElementById('answer-btn').addEventListener('click', () => {
+				if (raceOver) return;
+				const sols = solve24(nums.slice());
+				tipEl.innerHTML = sols.length
+					? '答案：<span class="ans">' + escapeHtml(sols[0]) + ' = 24</span>（括號順序就是點牌順序）'
+					: '這題無解？不可能，題目都是驗證過的';
+			});
+			document.getElementById('next-btn').addEventListener('click', () => {
+				if (mode === 'single' && !raceOver) streak = 0;
+				startRound();
+			});
 
 			setMode('single');
 		</script>
