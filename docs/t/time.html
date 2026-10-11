@@ -1,8 +1,216 @@
-<!DOCTYPE html><html lang="zh-Hant" data-astro-cid-5xvh5myv><head><meta charset="utf-8"><link rel="icon" type="image/svg+xml" href="/favicon.svg"><link rel="icon" href="/favicon.ico"><meta name="viewport" content="width=device-width"><meta name="generator" content="Astro v7.3.8"><title>現在時間</title><script>
+<!doctype html>
+<html lang="zh-Hant">
+	<head>
+		<meta charset="utf-8" />
+		<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+		<link rel="icon" href="/favicon.ico" />
+		<meta name="viewport" content="width=device-width" />
+		<title>現在時間</title>
+		<script>
 			(() => {
 				const saved = localStorage.getItem('t-theme');
 				const theme = saved || (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
 				document.documentElement.dataset.theme = theme;
 			})();
-		</script><style>:root{--bg:#fff;--fg:#1a1a1a;--muted:#8a8a8a;--btn-bg:#0000000f;--btn-hover:#0000001f}html[data-theme=dark]{--bg:#111;--fg:#f5f5f5;--muted:#9a9a9a;--btn-bg:#ffffff14;--btn-hover:#ffffff29}html,body{height:100%}body{background:var(--bg);color:var(--fg);user-select:none;flex-direction:column;justify-content:center;align-items:center;margin:0;font-family:system-ui,-apple-system,Segoe UI,Noto Sans TC,sans-serif;transition:background .3s,color .3s;display:flex;overflow:hidden}#clock[data-astro-cid-5xvh5myv]{letter-spacing:.02em;font-variant-numeric:tabular-nums;white-space:nowrap;align-items:baseline;font-size:min(16.5vw,42vh);font-weight:700;line-height:1;display:flex}#ampm[data-astro-cid-5xvh5myv]{color:var(--muted);margin-left:.4em;font-size:min(3.5vw,8vh)}.colon[data-astro-cid-5xvh5myv]{animation:2s step-end infinite blink}@keyframes blink{50%{opacity:.25}}#date[data-astro-cid-5xvh5myv]{color:var(--muted);font-variant-numeric:tabular-nums;margin-top:2vh;font-size:min(3.2vw,5.5vh)}#date[data-astro-cid-5xvh5myv].hidden,#ampm[data-astro-cid-5xvh5myv].hidden{display:none}#controls[data-astro-cid-5xvh5myv]{opacity:0;justify-content:center;gap:.6rem;padding:1rem;transition:opacity .3s;display:flex;position:fixed;bottom:0;left:0;right:0}body:hover #controls[data-astro-cid-5xvh5myv],body:focus-within #controls[data-astro-cid-5xvh5myv]{opacity:1}#controls[data-astro-cid-5xvh5myv] button[data-astro-cid-5xvh5myv]{font:inherit;background:var(--btn-bg);color:inherit;cursor:pointer;border:none;border-radius:999px;padding:.45rem 1rem;font-size:.95rem}#controls[data-astro-cid-5xvh5myv] button[data-astro-cid-5xvh5myv]:hover{background:var(--btn-hover)}#controls[data-astro-cid-5xvh5myv] a[data-astro-cid-5xvh5myv]{color:inherit;opacity:.7;align-items:center;text-decoration:none;display:flex}#controls[data-astro-cid-5xvh5myv] a[data-astro-cid-5xvh5myv]:hover{opacity:1}
-</style></head><body data-astro-cid-5xvh5myv><div id="clock" role="timer" aria-label="現在時間" data-astro-cid-5xvh5myv><span id="hh" data-astro-cid-5xvh5myv>--</span><span class="colon" data-astro-cid-5xvh5myv>:</span><span id="mm" data-astro-cid-5xvh5myv>--</span><span class="colon" data-astro-cid-5xvh5myv>:</span><span id="ss" data-astro-cid-5xvh5myv>--</span><span id="ampm" class="hidden" data-astro-cid-5xvh5myv></span></div><div id="date" data-astro-cid-5xvh5myv>　</div><div id="controls" data-astro-cid-5xvh5myv><button id="fmt-btn" data-astro-cid-5xvh5myv>24H</button><button id="date-btn" data-astro-cid-5xvh5myv>隱藏日期</button><button id="theme-btn" data-astro-cid-5xvh5myv>深色</button><button id="fs-btn" title="全螢幕" data-astro-cid-5xvh5myv>⛶</button><a href="/t.html" title="導覽頁" data-astro-cid-5xvh5myv>🧭</a><a href="/" title="回首頁" data-astro-cid-5xvh5myv>🏠</a></div><script type="module">var e=e=>String(e).padStart(2,`0`),t=document.getElementById(`hh`),n=document.getElementById(`mm`),r=document.getElementById(`ss`),i=document.getElementById(`ampm`),a=document.getElementById(`date`),o=document.querySelectorAll(`.colon`),s=localStorage.getItem(`t-24h`)!==`0`,c=localStorage.getItem(`t-date`)!==`0`;function l(){let o=new Date,c=o.getHours();s?i.classList.add(`hidden`):(i.classList.remove(`hidden`),i.textContent=c<12?`上午`:`下午`,c=c%12||12),t.textContent=e(c),n.textContent=e(o.getMinutes()),r.textContent=e(o.getSeconds()),a.textContent=o.toLocaleDateString(`zh-TW`,{year:`numeric`,month:`long`,day:`numeric`,weekday:`long`}),setTimeout(l,1e3-Date.now()%1e3+20)}l(),setInterval(()=>{o.forEach(e=>{e.style.animation=`none`,e.offsetWidth,e.style.animation=``})},1e3);function u(){document.getElementById(`fmt-btn`).textContent=s?`24H`:`12H`,document.getElementById(`date-btn`).textContent=c?`隱藏日期`:`顯示日期`,a.classList.toggle(`hidden`,!c),document.getElementById(`theme-btn`).textContent=document.documentElement.dataset.theme===`dark`?`淺色`:`深色`}document.getElementById(`fmt-btn`).addEventListener(`click`,()=>{s=!s,localStorage.setItem(`t-24h`,s?`1`:`0`),l(),u()}),document.getElementById(`date-btn`).addEventListener(`click`,()=>{c=!c,localStorage.setItem(`t-date`,c?`1`:`0`),u()}),document.getElementById(`theme-btn`).addEventListener(`click`,()=>{let e=document.documentElement.dataset.theme===`dark`?`light`:`dark`;document.documentElement.dataset.theme=e,localStorage.setItem(`t-theme`,e),u()}),document.getElementById(`fs-btn`).addEventListener(`click`,()=>{document.fullscreenElement?document.exitFullscreen():document.documentElement.requestFullscreen()}),u();</script></body></html>
+		</script>
+		<style>
+			:root {
+				--bg: #ffffff;
+				--fg: #1a1a1a;
+				--muted: #8a8a8a;
+				--btn-bg: rgba(0, 0, 0, 0.06);
+				--btn-hover: rgba(0, 0, 0, 0.12);
+			}
+			html[data-theme='dark'] {
+				--bg: #111111;
+				--fg: #f5f5f5;
+				--muted: #9a9a9a;
+				--btn-bg: rgba(255, 255, 255, 0.08);
+				--btn-hover: rgba(255, 255, 255, 0.16);
+			}
+			html,
+			body {
+				height: 100%;
+			}
+			body {
+				margin: 0;
+				background: var(--bg);
+				color: var(--fg);
+				font-family: system-ui, -apple-system, 'Segoe UI', 'Noto Sans TC', sans-serif;
+				display: flex;
+				flex-direction: column;
+				align-items: center;
+				justify-content: center;
+				overflow: hidden;
+				transition: background 0.3s, color 0.3s;
+				user-select: none;
+			}
+			#clock {
+				font-size: min(16.5vw, 42vh);
+				font-weight: 700;
+				line-height: 1;
+				letter-spacing: 0.02em;
+				font-variant-numeric: tabular-nums;
+				display: flex;
+				align-items: baseline;
+				white-space: nowrap;
+			}
+			#ampm {
+				font-size: min(3.5vw, 8vh);
+				color: var(--muted);
+				margin-left: 0.4em;
+			}
+			.colon {
+				animation: blink 2s steps(1) infinite;
+			}
+			@keyframes blink {
+				50% {
+					opacity: 0.25;
+				}
+			}
+			#date {
+				margin-top: 2vh;
+				font-size: min(3.2vw, 5.5vh);
+				color: var(--muted);
+				font-variant-numeric: tabular-nums;
+			}
+			#date.hidden,
+			#ampm.hidden {
+				display: none;
+			}
+			#controls {
+				position: fixed;
+				bottom: 0;
+				left: 0;
+				right: 0;
+				display: flex;
+				justify-content: center;
+				gap: 0.6rem;
+				padding: 1rem;
+				opacity: 0;
+				transition: opacity 0.3s;
+			}
+			body:hover #controls,
+			body:focus-within #controls {
+				opacity: 1;
+			}
+			#controls button {
+				font: inherit;
+				font-size: 0.95rem;
+				padding: 0.45rem 1rem;
+				border: none;
+				border-radius: 999px;
+				background: var(--btn-bg);
+				color: inherit;
+				cursor: pointer;
+			}
+			#controls button:hover {
+				background: var(--btn-hover);
+			}
+			#controls a {
+				color: inherit;
+				text-decoration: none;
+				display: flex;
+				align-items: center;
+				opacity: 0.7;
+			}
+			#controls a:hover {
+				opacity: 1;
+			}
+		</style>
+	</head>
+	<body>
+		<div id="clock" role="timer" aria-label="現在時間">
+			<span id="hh">--</span><span class="colon">:</span><span id="mm">--</span><span class="colon">:</span><span id="ss">--</span><span id="ampm" class="hidden"></span>
+		</div>
+		<div id="date">　</div>
+		<div id="controls">
+			<button id="fmt-btn">24H</button>
+			<button id="date-btn">隱藏日期</button>
+			<button id="theme-btn">深色</button>
+			<button id="fs-btn" title="全螢幕">⛶</button>
+			<a href="/t/index.html" title="導覽頁">🧭</a>
+			<a href="/" title="回首頁">🏠</a>
+		</div>
+		<script>
+			const pad = (n) => String(n).padStart(2, '0');
+			const hh = document.getElementById('hh');
+			const mm = document.getElementById('mm');
+			const ss = document.getElementById('ss');
+			const ampm = document.getElementById('ampm');
+			const dateEl = document.getElementById('date');
+			const colons = document.querySelectorAll('.colon');
+
+			let use24 = localStorage.getItem('t-24h') !== '0';
+			let showDate = localStorage.getItem('t-date') !== '0';
+
+			function tick() {
+				const now = new Date();
+				let h = now.getHours();
+				if (use24) {
+					ampm.classList.add('hidden');
+				} else {
+					ampm.classList.remove('hidden');
+					ampm.textContent = h < 12 ? '上午' : '下午';
+					h = h % 12 || 12;
+				}
+				hh.textContent = pad(h);
+				mm.textContent = pad(now.getMinutes());
+				ss.textContent = pad(now.getSeconds());
+				dateEl.textContent = now.toLocaleDateString('zh-TW', {
+					year: 'numeric',
+					month: 'long',
+					day: 'numeric',
+					weekday: 'long',
+				});
+				// 對齊下一秒再更新，避免飄移
+				setTimeout(tick, 1000 - (Date.now() % 1000) + 20);
+			}
+			tick();
+
+			// 秒針走動時讓冒號每整秒閃一下
+			setInterval(() => {
+				colons.forEach((c) => {
+					c.style.animation = 'none';
+					void c.offsetWidth;
+					c.style.animation = '';
+				});
+			}, 1000);
+
+			function renderControls() {
+				document.getElementById('fmt-btn').textContent = use24 ? '24H' : '12H';
+				document.getElementById('date-btn').textContent = showDate ? '隱藏日期' : '顯示日期';
+				dateEl.classList.toggle('hidden', !showDate);
+				document.getElementById('theme-btn').textContent =
+					document.documentElement.dataset.theme === 'dark' ? '淺色' : '深色';
+			}
+
+			document.getElementById('fmt-btn').addEventListener('click', () => {
+				use24 = !use24;
+				localStorage.setItem('t-24h', use24 ? '1' : '0');
+				tick();
+				renderControls();
+			});
+			document.getElementById('date-btn').addEventListener('click', () => {
+				showDate = !showDate;
+				localStorage.setItem('t-date', showDate ? '1' : '0');
+				renderControls();
+			});
+			document.getElementById('theme-btn').addEventListener('click', () => {
+				const next = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark';
+				document.documentElement.dataset.theme = next;
+				localStorage.setItem('t-theme', next);
+				renderControls();
+			});
+			document.getElementById('fs-btn').addEventListener('click', () => {
+				if (document.fullscreenElement) {
+					document.exitFullscreen();
+				} else {
+					document.documentElement.requestFullscreen();
+				}
+			});
+
+			renderControls();
+		</script>
+	</body>
+</html>

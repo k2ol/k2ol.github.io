@@ -1,15 +1,12 @@
----
----
-
+<!doctype html>
 <html lang="zh-Hant">
 	<head>
 		<meta charset="utf-8" />
 		<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
 		<link rel="icon" href="/favicon.ico" />
 		<meta name="viewport" content="width=device-width" />
-		<meta name="generator" content={Astro.generator} />
 		<title>現在時間</title>
-		<script is:inline>
+		<script>
 			(() => {
 				const saved = localStorage.getItem('t-theme');
 				const theme = saved || (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
@@ -132,17 +129,17 @@
 			<button id="date-btn">隱藏日期</button>
 			<button id="theme-btn">深色</button>
 			<button id="fs-btn" title="全螢幕">⛶</button>
-			<a href="/t.html" title="導覽頁">🧭</a>
+			<a href="/t/index.html" title="導覽頁">🧭</a>
 			<a href="/" title="回首頁">🏠</a>
 		</div>
 		<script>
 			const pad = (n) => String(n).padStart(2, '0');
-			const hh = document.getElementById('hh')!;
-			const mm = document.getElementById('mm')!;
-			const ss = document.getElementById('ss')!;
-			const ampm = document.getElementById('ampm')!;
-			const dateEl = document.getElementById('date')!;
-			const colons = document.querySelectorAll<HTMLElement>('.colon');
+			const hh = document.getElementById('hh');
+			const mm = document.getElementById('mm');
+			const ss = document.getElementById('ss');
+			const ampm = document.getElementById('ampm');
+			const dateEl = document.getElementById('date');
+			const colons = document.querySelectorAll('.colon');
 
 			let use24 = localStorage.getItem('t-24h') !== '0';
 			let showDate = localStorage.getItem('t-date') !== '0';
@@ -181,31 +178,31 @@
 			}, 1000);
 
 			function renderControls() {
-				(document.getElementById('fmt-btn')!).textContent = use24 ? '24H' : '12H';
-				(document.getElementById('date-btn')!).textContent = showDate ? '隱藏日期' : '顯示日期';
+				document.getElementById('fmt-btn').textContent = use24 ? '24H' : '12H';
+				document.getElementById('date-btn').textContent = showDate ? '隱藏日期' : '顯示日期';
 				dateEl.classList.toggle('hidden', !showDate);
-				(document.getElementById('theme-btn')!).textContent =
+				document.getElementById('theme-btn').textContent =
 					document.documentElement.dataset.theme === 'dark' ? '淺色' : '深色';
 			}
 
-			document.getElementById('fmt-btn')!.addEventListener('click', () => {
+			document.getElementById('fmt-btn').addEventListener('click', () => {
 				use24 = !use24;
 				localStorage.setItem('t-24h', use24 ? '1' : '0');
 				tick();
 				renderControls();
 			});
-			document.getElementById('date-btn')!.addEventListener('click', () => {
+			document.getElementById('date-btn').addEventListener('click', () => {
 				showDate = !showDate;
 				localStorage.setItem('t-date', showDate ? '1' : '0');
 				renderControls();
 			});
-			document.getElementById('theme-btn')!.addEventListener('click', () => {
+			document.getElementById('theme-btn').addEventListener('click', () => {
 				const next = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark';
 				document.documentElement.dataset.theme = next;
 				localStorage.setItem('t-theme', next);
 				renderControls();
 			});
-			document.getElementById('fs-btn')!.addEventListener('click', () => {
+			document.getElementById('fs-btn').addEventListener('click', () => {
 				if (document.fullscreenElement) {
 					document.exitFullscreen();
 				} else {
