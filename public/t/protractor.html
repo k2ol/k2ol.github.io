@@ -21,8 +21,6 @@
 				--btn-bg: rgba(0, 0, 0, 0.06);
 				--btn-hover: rgba(0, 0, 0, 0.12);
 				--accent: #6366f1;
-				--card: rgba(0, 0, 0, 0.04);
-				--ok: #22a55b;
 			}
 			html[data-theme='dark'] {
 				--bg: #111111;
@@ -31,36 +29,28 @@
 				--btn-bg: rgba(255, 255, 255, 0.08);
 				--btn-hover: rgba(255, 255, 255, 0.16);
 				--accent: #8b85ff;
-				--card: rgba(255, 255, 255, 0.06);
-				--ok: #4ade80;
+			}
+			html,
+			body {
+				height: 100%;
 			}
 			body {
 				margin: 0;
-				min-height: 100vh;
 				background: var(--bg);
 				color: var(--fg);
 				font-family: system-ui, -apple-system, 'Segoe UI', 'Noto Sans TC', sans-serif;
 				display: flex;
 				flex-direction: column;
-				align-items: center;
-				gap: 1rem;
-				padding: 2.5rem 1rem 2rem;
-				box-sizing: border-box;
 				transition: background 0.3s, color 0.3s;
-				user-select: none;
-			}
-			h1 {
-				margin: 0;
-				font-size: 1.4rem;
-				color: var(--muted);
-				font-weight: 600;
+				overflow: hidden;
 			}
 			#links {
 				position: fixed;
-				top: 1rem;
-				right: 1rem;
+				top: 0.8rem;
+				right: 0.8rem;
 				display: flex;
 				gap: 0.7rem;
+				z-index: 30;
 			}
 			#links a {
 				color: var(--muted);
@@ -70,108 +60,98 @@
 			#links a:hover {
 				color: var(--fg);
 			}
-			.row {
+			#bar {
 				display: flex;
-				gap: 0.8rem;
+				gap: 0.9rem;
 				align-items: center;
-				flex-wrap: wrap;
 				justify-content: center;
+				flex-wrap: wrap;
+				padding: 0.7rem 1rem;
+				z-index: 20;
 			}
-			.row > * {
+			#bar > * {
 				font: inherit;
-				padding: 0.5rem 1.2rem;
+				font-size: 0.95rem;
+				padding: 0.45rem 1.1rem;
 				border-radius: 999px;
 				border: none;
 				background: var(--btn-bg);
 				color: inherit;
 				cursor: pointer;
 			}
-			.row > *:hover {
+			#bar > *:hover {
 				background: var(--btn-hover);
 			}
-			.row .mode-on {
-				background: var(--accent);
+			#bar label {
+				display: flex;
+				align-items: center;
+				gap: 0.4rem;
+			}
+			#cam-btn.cam-on {
+				background: #e6532e;
 				color: #fff;
 				font-weight: 700;
 			}
-			.panel {
-				display: none;
-				flex-direction: column;
-				align-items: center;
-				gap: 1rem;
-				width: 100%;
-			}
-			.panel.on {
-				display: flex;
-			}
-			.big {
-				font-size: min(18vw, 5.5rem);
-				font-weight: 800;
-				line-height: 1;
-				font-variant-numeric: tabular-nums;
-			}
-			.big small {
-				font-size: 0.4em;
-				color: var(--muted);
-				font-weight: 600;
-			}
-			#status {
-				color: var(--muted);
-				font-size: 0.95rem;
-				text-align: center;
-				min-height: 1.4rem;
-			}
-			#gauge {
-				width: min(80vw, 300px);
-			}
-			#cam-wrap {
+			#stage {
 				position: relative;
-				width: min(94vw, 40rem);
-				aspect-ratio: 4 / 3;
-				background: #000;
+				flex: 1;
+				margin: 0 0.6rem 0.6rem;
 				border-radius: 0.8rem;
 				overflow: hidden;
+				background: var(--card);
+				touch-action: none;
 			}
-			#cam {
+			#mirror {
 				position: absolute;
 				inset: 0;
 				width: 100%;
 				height: 100%;
 				object-fit: cover;
+				display: none;
 			}
-			#overlay {
+			#mirror.on {
+				display: block;
+			}
+			#cv {
 				position: absolute;
 				inset: 0;
 				width: 100%;
 				height: 100%;
-				cursor: crosshair;
+				touch-action: none;
 			}
-			#cam-read {
-				min-height: 2.2rem;
-				font-size: 1.25rem;
+			.deg-box {
+				position: absolute;
+				display: flex;
+				align-items: center;
+				gap: 0.3rem;
+				background: var(--bg);
+				border: 1px solid var(--btn-hover);
+				border-radius: 0.5rem;
+				padding: 0.2rem 0.5rem;
+				font-size: 0.9rem;
+				z-index: 10;
+				transform: translate(-50%, -50%);
+				box-shadow: 0 2px 8px rgba(0, 0, 0, 0.18);
+			}
+			.deg-box input {
+				font: inherit;
 				font-weight: 700;
+				width: 3.2rem;
 				text-align: center;
-			}
-			#cam-read .ang {
+				border: none;
+				background: transparent;
 				color: var(--accent);
+				font-size: 1.05rem;
 			}
-			.hint {
+			.deg-box input:focus {
+				outline: none;
+			}
+			#tip {
+				text-align: center;
 				color: var(--muted);
 				font-size: 0.85rem;
-				margin: 0;
-				text-align: center;
-			}
-			.zero-btn {
-				font: inherit;
-				padding: 0.5rem 1.2rem;
-				border-radius: 999px;
-				border: none;
-				background: var(--btn-bg);
-				color: inherit;
-				cursor: pointer;
-			}
-			.zero-btn:hover {
-				background: var(--btn-hover);
+				padding: 0 1rem 0.6rem;
+				z-index: 20;
 			}
 		</style>
 	</head>
@@ -180,326 +160,245 @@
 			<a href="/t/index.html" title="工具箱">🧰</a>
 			<a href="/" title="回首頁">🏠</a>
 		</div>
-		<h1>📐 量角器</h1>
-		<div class="row">
-			<button id="tab-gyro" class="mode-on">📱 陀螺儀測仰角</button>
-			<button id="tab-cam">📷 相機測角度</button>
+		<div id="bar">
+			<label><input type="checkbox" id="show-pin" checked /> 顯示釘住圖示</label>
+			<button id="zero-btn">⊙ 臂歸 90°</button>
+			<button id="cam-btn">📷 相機背景</button>
+			<span id="cam-tip"></span>
 		</div>
-
-		<div id="panel-gyro" class="panel on">
-			<canvas id="gauge" width="600" height="360"></canvas>
-			<div class="big"><span id="gyro-val">--</span><small>°</small></div>
-			<div id="status">將手機長邊貼齊待測斜面（螢幕朝自己），平放為 0°</div>
-			<div class="row">
-				<button class="zero-btn" id="enable-btn">⚡ 啟用感測器</button>
-				<button class="zero-btn" id="zero-btn">⊙ 歸零</button>
-			</div>
-			<p class="hint">需要裝置支援動作感測器；iPhone 需先授權「動作與方向存取權」。</p>
+		<div id="stage">
+			<video id="mirror" autoplay playsinline muted></video>
+			<canvas id="cv"></canvas>
+			<div class="deg-box" id="box-left"><input type="number" id="deg-left" min="0" max="180" value="90" /><span>左刻度</span></div>
+			<div class="deg-box" id="box-right"><span>右刻度</span><input type="number" id="deg-right" min="0" max="180" value="90" /></div>
 		</div>
-
-		<div id="panel-cam" class="panel">
-			<div id="cam-wrap">
-				<video id="cam" playsinline muted></video>
-				<canvas id="overlay"></canvas>
-			</div>
-			<div id="cam-read">點第一下：端點 A</div>
-			<div class="row">
-				<button class="zero-btn" id="cam-start-btn">📷 開啟相機</button>
-				<button class="zero-btn" id="cam-clear-btn">↺ 重新測量</button>
-			</div>
-			<p class="hint">依序點：端點 A → 頂點 O → 端點 B，即可量出 ∠AOB；再點一下重新開始。畫面中央有量角刻度輔助。</p>
-		</div>
-
+		<div id="tip">拖動紅色圖釘定頂點，拖動臂端圓點旋轉量角臂；也可直接輸入左／右刻度角度。半透明量角器可對著螢幕上的物件比對，或開相機背景對準實物。</div>
 		<script>
-			// ---------- 分頁切換 ----------
-			const tabGyro = document.getElementById('tab-gyro');
-			const tabCam = document.getElementById('tab-cam');
-			const panelGyro = document.getElementById('panel-gyro');
-			const panelCam = document.getElementById('panel-cam');
-			function showPanel(which) {
-				panelGyro.classList.toggle('on', which === 'gyro');
-				panelCam.classList.toggle('on', which === 'cam');
-				tabGyro.className = which === 'gyro' ? 'mode-on' : '';
-				tabCam.className = which === 'cam' ? 'mode-on' : '';
-				if (which !== 'cam') stopCam();
-			}
-			tabGyro.addEventListener('click', () => showPanel('gyro'));
-			tabCam.addEventListener('click', () => showPanel('cam'));
+			const stage = document.getElementById('stage');
+			const cv = document.getElementById('cv');
+			const ctx = cv.getContext('2d');
+			const mirror = document.getElementById('mirror');
+			const degL = document.getElementById('deg-left');
+			const degR = document.getElementById('deg-right');
+			const boxL = document.getElementById('box-left');
+			const boxR = document.getElementById('box-right');
+			const showPin = document.getElementById('show-pin');
+			const camBtn = document.getElementById('cam-btn');
+			const camTip = document.getElementById('cam-tip');
 
-			// ---------- 陀螺儀測仰角 ----------
-			const gauge = document.getElementById('gauge');
-			const gctx = gauge.getContext('2d');
-			const gyroVal = document.getElementById('gyro-val');
-			const gyroStatus = document.getElementById('status');
-			let zeroOffset = 0;
-			let curElev = null;
-
-			function drawGauge(elev) {
-				const W = gauge.width;
-				const H = gauge.height;
-				const cx = W / 2;
-				const cy = H - 30;
-				const R = Math.min(W / 2 - 30, H - 60);
-				elev = Math.max(-90, Math.min(90, elev ?? 0));
-				gctx.clearRect(0, 0, W, H);
-				const fg = getComputedStyle(document.documentElement).getPropertyValue('--fg').trim() || '#1a1a1a';
-				const accent = getComputedStyle(document.documentElement).getPropertyValue('--accent').trim() || '#6366f1';
-				// 弧線與刻度：-90°～90°
-				gctx.strokeStyle = fg;
-				gctx.fillStyle = fg;
-				gctx.lineWidth = 2;
-				gctx.beginPath();
-				gctx.arc(cx, cy, R, Math.PI, 2 * Math.PI);
-				gctx.stroke();
-				gctx.font = '16px system-ui, sans-serif';
-				gctx.textAlign = 'center';
-				gctx.textBaseline = 'middle';
-				for (let a = -90; a <= 90; a += 10) {
-					const rad = Math.PI + (a + 90) / 180 * Math.PI;
-					const major = a % 30 === 0;
-					const r1 = R - (major ? 14 : 8);
-					gctx.beginPath();
-					gctx.moveTo(cx + Math.cos(rad) * r1, cy + Math.sin(rad) * r1);
-					gctx.lineTo(cx + Math.cos(rad) * R, cy + Math.sin(rad) * R);
-					gctx.stroke();
-					if (major) {
-						gctx.fillText(a + '°', cx + Math.cos(rad) * (R - 30), cy + Math.sin(rad) * (R - 30));
-					}
-				}
-				// 水平基準線
-				gctx.strokeStyle = 'rgba(128,128,128,0.5)';
-				gctx.setLineDash([5, 5]);
-				gctx.beginPath();
-				gctx.moveTo(cx - R, cy);
-				gctx.lineTo(cx + R, cy);
-				gctx.stroke();
-				gctx.setLineDash([]);
-				// 指針
-				if (elev !== null) {
-					const rad = Math.PI + (elev + 90) / 180 * Math.PI;
-					gctx.strokeStyle = accent;
-					gctx.lineWidth = 4;
-					gctx.beginPath();
-					gctx.moveTo(cx, cy);
-					gctx.lineTo(cx + Math.cos(rad) * (R - 6), cy + Math.sin(rad) * (R - 6));
-					gctx.stroke();
-					gctx.beginPath();
-					gctx.arc(cx, cy, 7, 0, Math.PI * 2);
-					gctx.fillStyle = accent;
-					gctx.fill();
-				}
-				gctx.fillStyle = fg;
-				gctx.fillText('0°（水平）', cx, cy - 14);
-			}
-
-			function normElev(beta) {
-				// beta：0 平放、90 立正、超出範圍折返，取仰角 0～90
-				let b = ((beta % 360) + 360) % 360;
-				if (b <= 90) return b;
-				if (b <= 180) return 180 - b;
-				if (b <= 270) return b - 180;
-				return 360 - b;
-			}
-
-			function onOrient(e) {
-				if (e.beta === null && e.gamma === null) return;
-				const elev = normElev(e.beta ?? 0);
-				curElev = elev;
-				const shown = Math.round((elev - zeroOffset) * 10) / 10;
-				gyroVal.textContent = shown;
-				drawGauge(elev - zeroOffset);
-			}
-
-			async function enableGyro() {
-				try {
-					if (typeof DeviceOrientationEvent === 'undefined' || !window.DeviceOrientationEvent) {
-						gyroStatus.textContent = '此裝置/瀏覽器不支援動作感測器';
-						return;
-					}
-					if (DeviceOrientationEvent.requestPermission) {
-						// iOS：必須由使用者手勢觸發授權
-						const res = await DeviceOrientationEvent.requestPermission();
-						if (res !== 'granted') {
-							gyroStatus.textContent = '未授權動作感測器（請再按一次「啟用感測器」並允許）';
-							return;
-						}
-					}
-					window.addEventListener('deviceorientation', onOrient);
-					gyroStatus.textContent = '感測中…';
-				} catch (err) {
-					gyroStatus.textContent = '無法啟用感測器：' + err.message + '（iPhone 請按「啟用感測器」授權）';
-				}
-			}
-
-			document.getElementById('enable-btn').addEventListener('click', enableGyro);
-
-			document.getElementById('zero-btn').addEventListener('click', () => {
-				if (curElev === null) return;
-				zeroOffset = curElev;
-				gyroVal.textContent = 0;
-				drawGauge(0);
-			});
-
-			// 桌面沒有陀螺儀時的提示（裝置有支援則在授權後自動覆蓋）
-			drawGauge(null);
-
-			// ---------- 相機測角度 ----------
-			const cam = document.getElementById('cam');
-			const overlay = document.getElementById('overlay');
-			const octx = overlay.getContext('2d');
-			const camRead = document.getElementById('cam-read');
+			// 狀態：pin=頂點，theta=量角臂角度（0°朝右、90°朝上、180°朝左）
+			let W = 0,
+				H = 0;
+			let center = { x: 0, y: 0 };
+			let R = 200;
+			let pin = { x: 0, y: 0 };
+			let theta = 90;
+			let drag = null; // 'pin' | 'handle' | null
 			let stream = null;
-			let pts = []; // [A, O, B]
-			let lastAngle = null;
 
-			function angleBetween(a, o, b) {
-				const v1 = { x: a.x - o.x, y: a.y - o.y };
-				const v2 = { x: b.x - o.x, y: b.y - o.y };
-				const m1 = Math.hypot(v1.x, v1.y);
-				const m2 = Math.hypot(v2.x, v2.y);
-				if (!m1 || !m2) return null;
-				const dot = v1.x * v2.x + v1.y * v2.y;
-				return (Math.acos(Math.min(1, Math.max(-1, dot / (m1 * m2)))) * 180) / Math.PI;
+			function resize() {
+				W = stage.clientWidth;
+				H = stage.clientHeight;
+				cv.width = W;
+				cv.height = H;
+				center = { x: W / 2, y: Math.min(H * 0.78, H - R - 8) };
+				R = Math.min(W * 0.44, H * 0.6);
+				center = { x: W / 2, y: Math.min(H * 0.78, H - 8) };
+				if (!pin.x) pin = { x: center.x, y: center.y };
+				layoutBoxes();
+				draw();
+			}
+			window.addEventListener('resize', resize);
+
+			function armLen() {
+				return R * 1.04;
+			}
+			function armEnd() {
+				return { x: pin.x + Math.cos((theta * Math.PI) / 180) * armLen(), y: pin.y - Math.sin((theta * Math.PI) / 180) * armLen() };
 			}
 
-			function resizeOverlay() {
-				overlay.width = overlay.clientWidth;
-				overlay.height = overlay.clientHeight;
-				drawOverlay();
+			function layoutBoxes() {
+				boxL.style.left = Math.max(60, center.x - R * 0.72) + 'px';
+				boxL.style.top = center.y + 26 + 'px';
+				boxR.style.left = Math.min(W - 60, center.x + R * 0.72) + 'px';
+				boxR.style.top = center.y + 26 + 'px';
 			}
-			window.addEventListener('resize', resizeOverlay);
 
-			function drawOverlay() {
-				const W = overlay.width;
-				const H = overlay.height;
-				if (!W || !H) return;
-				octx.clearRect(0, 0, W, H);
-				const cx = W / 2;
-				const cy = H / 2;
-				const R = Math.min(W, H) * 0.38;
-				// 中央量角刻度環
-				octx.strokeStyle = 'rgba(255,255,255,0.75)';
-				octx.lineWidth = 1.5;
-				octx.beginPath();
-				octx.arc(cx, cy, R, 0, Math.PI * 2);
-				octx.stroke();
-				octx.font = '12px system-ui, sans-serif';
-				octx.textAlign = 'center';
-				octx.textBaseline = 'middle';
-				for (let a = 0; a < 360; a += 10) {
+			function themeColors() {
+				const dark = document.documentElement.dataset.theme === 'dark';
+				return {
+					fill: dark ? 'rgba(40,40,46,0.62)' : 'rgba(255,255,255,0.62)',
+					major: 'rgba(230,83,46,0.95)',
+					minor: dark ? 'rgba(220,220,220,0.75)' : 'rgba(60,60,60,0.8)',
+					text: dark ? '#eee' : '#222',
+					line: dark ? '#ffb0a0' : '#e6532e',
+					pin: '#e6303c',
+				};
+			}
+
+			function draw() {
+				ctx.clearRect(0, 0, W, H);
+				const c = themeColors();
+				// --- 量角器本體（半透明半圓） ---
+				ctx.beginPath();
+				ctx.arc(center.x, center.y, R, Math.PI, 2 * Math.PI);
+				ctx.closePath();
+				ctx.fillStyle = c.fill;
+				ctx.fill();
+				ctx.strokeStyle = c.minor;
+				ctx.lineWidth = 1.5;
+				ctx.stroke();
+				// 刻度：每 1°，5° 中刻度，10° 主刻度＋數字
+				ctx.font = '13px system-ui, sans-serif';
+				ctx.textAlign = 'center';
+				ctx.textBaseline = 'middle';
+				for (let a = 0; a <= 180; a++) {
 					const rad = (a * Math.PI) / 180;
-					const major = a % 30 === 0;
-					const r1 = R - (major ? 12 : 6);
-					octx.beginPath();
-					octx.moveTo(cx + Math.cos(rad) * r1, cy + Math.sin(rad) * r1);
-					octx.lineTo(cx + Math.cos(rad) * R, cy + Math.sin(rad) * R);
-					octx.stroke();
-					if (a % 90 === 0) {
-						octx.fillStyle = 'rgba(255,255,255,0.9)';
-						octx.fillText(a + '°', cx + Math.cos(rad) * (R + 16), cy + Math.sin(rad) * (R + 16));
+					const dx = Math.cos(rad);
+					const dy = -Math.sin(rad);
+					const major = a % 10 === 0;
+					const mid = a % 5 === 0;
+					const len = major ? 18 : mid ? 12 : 7;
+					ctx.strokeStyle = major ? c.major : c.minor;
+					ctx.lineWidth = major ? 1.8 : 1;
+					ctx.beginPath();
+					ctx.moveTo(center.x + dx * R, center.y + dy * R);
+					ctx.lineTo(center.x + dx * (R - len), center.y + dy * (R - len));
+					ctx.stroke();
+					if (major) {
+						ctx.fillStyle = c.text;
+						ctx.fillText(String(a), center.x + dx * (R - 32), center.y + dy * (R - 32));
 					}
 				}
-				octx.beginPath();
-				octx.arc(cx, cy, 3, 0, Math.PI * 2);
-				octx.fillStyle = 'rgba(255,255,255,0.9)';
-				octx.fill();
-				// 測量線
-				if (pts.length >= 2) {
-					octx.strokeStyle = '#ffd54f';
-					octx.lineWidth = 2.5;
-					octx.beginPath();
-					octx.moveTo(pts[0].x, pts[0].y);
-					octx.lineTo(pts[1].x, pts[1].y);
-					octx.stroke();
+				// 基線（直徑）與延伸
+				ctx.strokeStyle = c.minor;
+				ctx.lineWidth = 1.5;
+				ctx.beginPath();
+				ctx.moveTo(center.x - R - 14, center.y);
+				ctx.lineTo(center.x + R + 14, center.y);
+				ctx.stroke();
+				// 中心十字
+				ctx.beginPath();
+				ctx.moveTo(center.x - 10, center.y);
+				ctx.lineTo(center.x + 10, center.y);
+				ctx.moveTo(center.x, center.y - 10);
+				ctx.lineTo(center.x, center.y + 10);
+				ctx.stroke();
+				// --- 量角臂 ---
+				const end = armEnd();
+				ctx.strokeStyle = c.line;
+				ctx.lineWidth = 3;
+				ctx.beginPath();
+				ctx.moveTo(pin.x, pin.y);
+				ctx.lineTo(end.x, end.y);
+				ctx.stroke();
+				// 臂端拖點
+				ctx.beginPath();
+				ctx.arc(end.x, end.y, 9, 0, Math.PI * 2);
+				ctx.fillStyle = c.line;
+				ctx.fill();
+				ctx.strokeStyle = '#fff';
+				ctx.lineWidth = 2;
+				ctx.stroke();
+				// --- 圖釘（頂點） ---
+				if (showPin.checked) {
+					ctx.beginPath();
+					ctx.arc(pin.x, pin.y, 8, 0, Math.PI * 2);
+					ctx.fillStyle = c.pin;
+					ctx.fill();
+					ctx.strokeStyle = '#fff';
+					ctx.lineWidth = 2;
+					ctx.stroke();
+					ctx.beginPath();
+					ctx.arc(pin.x, pin.y, 2.5, 0, Math.PI * 2);
+					ctx.fillStyle = '#fff';
+					ctx.fill();
 				}
-				if (pts.length >= 3) {
-					octx.strokeStyle = '#4fc3f7';
-					octx.beginPath();
-					octx.moveTo(pts[1].x, pts[1].y);
-					octx.lineTo(pts[2].x, pts[2].y);
-					octx.stroke();
-					// 角度弧
-					const ang1 = Math.atan2(pts[0].y - pts[1].y, pts[0].x - pts[1].x);
-					let ang2 = Math.atan2(pts[2].y - pts[1].y, pts[2].x - pts[1].x);
-					let sweep = ang2 - ang1;
-					while (sweep > Math.PI) sweep -= Math.PI * 2;
-					while (sweep < -Math.PI) sweep += Math.PI * 2;
-					octx.strokeStyle = '#ffffff';
-					octx.lineWidth = 2;
-					octx.beginPath();
-					octx.arc(pts[1].x, pts[1].y, 34, ang1, ang1 + sweep, sweep < 0);
-					octx.stroke();
-				}
-				// 點標記
-				pts.forEach((p, i) => {
-					octx.beginPath();
-					octx.arc(p.x, p.y, 6, 0, Math.PI * 2);
-					octx.fillStyle = i === 1 ? '#4fc3f7' : '#ffd54f';
-					octx.fill();
-					octx.strokeStyle = '#000';
-					octx.lineWidth = 1;
-					octx.stroke();
-					octx.fillStyle = '#fff';
-					octx.font = 'bold 13px system-ui, sans-serif';
-					octx.fillText(['A', 'O', 'B'][i], p.x + 10, p.y - 10);
-				});
 			}
 
-			overlay.addEventListener('pointerdown', (e) => {
-				const rect = overlay.getBoundingClientRect();
-				const p = { x: ((e.clientX - rect.left) / rect.width) * overlay.width, y: ((e.clientY - rect.top) / rect.height) * overlay.height };
-				if (pts.length >= 3) pts = [];
-				pts.push(p);
-				if (pts.length === 1) camRead.textContent = '點第二下：頂點 O';
-				else if (pts.length === 2) camRead.textContent = '點第三下：端點 B';
-				else {
-					const ang = angleBetween(pts[0], pts[1], pts[2]);
-					lastAngle = ang;
-					camRead.innerHTML = '∠AOB = <span class="ang">' + (ang === null ? '--' : ang.toFixed(1) + '°') + '</span>（再點一下重新測量）';
+			function setTheta(t) {
+				theta = Math.max(0, Math.min(180, Math.round(t * 10) / 10));
+				degR.value = Math.round(theta);
+				degL.value = 180 - Math.round(theta);
+				draw();
+			}
+
+			// 輸入角度（左刻度輸入的是 180−θ）
+			function onDegInput(e) {
+				const v = Number(e.target.value);
+				if (Number.isNaN(v) || v < 0 || v > 180) return;
+				setTheta(e.target === degL ? 180 - v : v);
+			}
+			degL.addEventListener('input', onDegInput);
+			degR.addEventListener('input', onDegInput);
+
+			// --- 拖曳（pin / 臂端） ---
+			function ptr(e) {
+				const r = cv.getBoundingClientRect();
+				return { x: ((e.clientX - r.left) / r.width) * W, y: ((e.clientY - r.top) / r.height) * H };
+			}
+			cv.addEventListener('pointerdown', (e) => {
+				const p = ptr(e);
+				const end = armEnd();
+				const near = (q) => Math.hypot(p.x - q.x, p.y - q.y) < 24;
+				if (near(end)) drag = 'handle';
+				else if (showPin.checked && near(pin)) drag = 'pin';
+				else if (near(center)) drag = 'pin';
+				if (drag) cv.setPointerCapture(e.pointerId);
+			});
+			cv.addEventListener('pointermove', (e) => {
+				if (!drag) return;
+				const p = ptr(e);
+				if (drag === 'pin') {
+					pin = { x: Math.max(4, Math.min(W - 4, p.x)), y: Math.max(4, Math.min(H - 4, p.y)) };
+				} else {
+					let t = (Math.atan2(pin.y - p.y, p.x - pin.x) * 180) / Math.PI;
+					t = Math.max(0, Math.min(180, t));
+					theta = Math.round(t * 10) / 10;
+					degR.value = Math.round(theta);
+					degL.value = 180 - Math.round(theta);
 				}
-				drawOverlay();
+				draw();
+			});
+			cv.addEventListener('pointerup', () => (drag = null));
+			cv.addEventListener('pointercancel', () => (drag = null));
+
+			showPin.addEventListener('change', draw);
+			document.getElementById('zero-btn').addEventListener('click', () => {
+				pin = { x: center.x, y: center.y };
+				setTheta(90);
 			});
 
+			// --- 相機背景 ---
 			async function startCam() {
 				try {
 					stream = await navigator.mediaDevices.getUserMedia({
-						video: { facingMode: 'environment' },
+						video: { facingMode: 'environment', width: { ideal: 4096 }, height: { ideal: 2304 } },
 						audio: false,
 					});
-					cam.srcObject = stream;
-					await cam.play();
-					resizeOverlay();
+					mirror.srcObject = stream;
+					mirror.classList.add('on');
+					camBtn.textContent = '⏹ 關閉相機';
+					camBtn.classList.add('cam-on');
+					camTip.textContent = '';
+					if (stage.requestFullscreen) stage.requestFullscreen().catch(() => {});
 				} catch (err) {
-					camRead.textContent = '無法開啟相機：' + err.message + '（需授權且以 https 開啟）';
+					camTip.textContent = '相機無法使用（需授權且以 https 開啟）';
 				}
 			}
-
 			function stopCam() {
 				if (stream) {
 					stream.getTracks().forEach((t) => t.stop());
 					stream = null;
 				}
+				mirror.classList.remove('on');
+				camBtn.textContent = '📷 相機背景';
+				camBtn.classList.remove('cam-on');
 			}
+			camBtn.addEventListener('click', () => (stream ? (stopCam(), document.exitFullscreen?.().catch(() => {})) : startCam()));
 
-			document.getElementById('cam-start-btn').addEventListener('click', () => {
-				if (stream) {
-					stopCam();
-					document.getElementById('cam-start-btn').textContent = '📷 開啟相機';
-				} else {
-					startCam();
-					document.getElementById('cam-start-btn').textContent = '⏹ 關閉相機';
-				}
-			});
-			document.getElementById('cam-clear-btn').addEventListener('click', () => {
-				pts = [];
-				lastAngle = null;
-				camRead.textContent = '點第一下：端點 A';
-				drawOverlay();
-			});
-
-			// 初始
-			resizeOverlay();
-			enableGyro();
+			resize();
+			setTheta(90);
 		</script>
 	</body>
 </html>
