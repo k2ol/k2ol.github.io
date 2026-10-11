@@ -1,0 +1,2409 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>3D Solar System Visualization</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Arial', sans-serif;
+            background: #000;
+            color: #fff;
+            overflow: hidden;
+            touch-action: none; /* Prevent default touch behaviors */
+        }
+
+        /* Mobile-first responsive design */
+        @media (max-width: 480px) {
+            body {
+                font-size: 12px;
+            }
+        }
+
+        @media (min-width: 481px) and (max-width: 768px) {
+            body {
+                font-size: 14px;
+            }
+        }
+
+        @media (min-width: 769px) and (max-width: 1024px) {
+            body {
+                font-size: 15px;
+            }
+        }
+
+        /* Landscape orientation optimizations */
+        @media screen and (orientation: landscape) and (max-height: 500px) {
+            #controls {
+                max-height: 70vh;
+                font-size: 12px;
+            }
+            
+            #planet-info {
+                max-height: 70vh;
+                font-size: 13px;
+            }
+            
+            #observation-tooltip {
+                max-height: 80px;
+                font-size: 11px;
+            }
+        }
+
+        #container {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+        }
+
+        #controls {
+            position: absolute;
+            top: 60px;
+            left: 20px;
+            z-index: 100;
+            background: rgba(0, 0, 0, 0.7);
+            padding: 20px;
+            border-radius: 10px;
+            backdrop-filter: blur(10px);
+            max-height: calc(100vh - 40px);
+            overflow-y: auto;
+            transition: transform 0.3s ease;
+        }
+
+        /* Mobile responsive controls */
+        @media (max-width: 480px) {
+            #controls {
+                position: fixed;
+                top: 60px;
+                left: 5px;
+                right: 5px;
+                padding: 12px;
+                max-height: 65vh;
+                transform: translateY(-100%);
+                opacity: 0;
+                pointer-events: none;
+                font-size: 12px;
+            }
+            
+            #controls.mobile-open {
+                transform: translateY(0);
+                opacity: 1;
+                pointer-events: all;
+            }
+            
+            .mobile-controls-toggle {
+                position: fixed;
+                top: 8px;
+                left: 8px;
+                z-index: 101;
+                background: #4CAF50;
+                border: none;
+                border-radius: 50%;
+                width: 45px;
+                height: 45px;
+                color: white;
+                font-size: 18px;
+                cursor: pointer;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+            }
+        }
+
+        @media (min-width: 481px) and (max-width: 768px) {
+            #controls {
+                position: fixed;
+                top: 60px;
+                left: 10px;
+                right: 10px;
+                padding: 15px;
+                max-height: 60vh;
+                transform: translateY(-100%);
+                opacity: 0;
+                pointer-events: none;
+            }
+            
+            #controls.mobile-open {
+                transform: translateY(0);
+                opacity: 1;
+                pointer-events: all;
+            }
+            
+            .mobile-controls-toggle {
+                position: fixed;
+                top: 10px;
+                left: 10px;
+                z-index: 101;
+                background: #4CAF50;
+                border: none;
+                border-radius: 50%;
+                width: 50px;
+                height: 50px;
+                color: white;
+                font-size: 20px;
+                cursor: pointer;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+            }
+        }
+
+        /* Tablet responsive controls */
+        @media (min-width: 769px) and (max-width: 1024px) {
+            #controls {
+                position: absolute;
+                top: 60px;
+                left: 15px;
+                padding: 18px;
+                max-height: calc(100vh - 30px);
+                width: 280px;
+                transition: transform 0.3s ease, opacity 0.3s ease;
+            }
+            
+            #controls.desktop-hidden {
+                transform: translateX(-100%);
+                opacity: 0;
+                pointer-events: none;
+            }
+            
+            .mobile-controls-toggle {
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                position: fixed;
+                top: 15px;
+                left: 15px;
+                z-index: 101;
+                background: #4CAF50;
+                border: none;
+                border-radius: 50%;
+                width: 50px;
+                height: 50px;
+                color: white;
+                font-size: 20px;
+                cursor: pointer;
+            }
+        }
+
+        /* Desktop controls */
+        @media (min-width: 1025px) {
+            #controls {
+                transition: transform 0.3s ease, opacity 0.3s ease;
+            }
+            
+            #controls.desktop-hidden {
+                transform: translateX(-100%);
+                opacity: 0;
+                pointer-events: none;
+            }
+            
+            .mobile-controls-toggle {
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                position: fixed;
+                top: 20px;
+                left: 20px;
+                z-index: 101;
+                background: #4CAF50;
+                border: none;
+                border-radius: 50%;
+                width: 55px;
+                height: 55px;
+                color: white;
+                font-size: 22px;
+                cursor: pointer;
+                box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+            }
+            
+            .mobile-controls-toggle:hover {
+                background: #45a049;
+                transform: scale(1.05);
+            }
+        }
+
+        .control-group {
+            margin-bottom: 15px;
+        }
+
+        .control-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-size: 14px;
+        }
+
+        button {
+            background: #4CAF50;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            margin: 5px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: background 0.3s;
+            touch-action: manipulation; /* Optimize for touch */
+        }
+
+        /* Mobile button adjustments */
+        @media (max-width: 480px) {
+            .control-group {
+                margin-bottom: 10px;
+            }
+            
+            .control-group label {
+                font-size: 12px;
+                margin-bottom: 6px;
+            }
+            
+            button {
+                padding: 10px 12px;
+                margin: 2px;
+                font-size: 12px;
+                min-height: 44px; /* iOS touch target minimum */
+                min-width: 44px;
+                border-radius: 8px;
+            }
+            
+            select {
+                min-height: 44px !important;
+                font-size: 12px !important;
+                padding: 10px;
+            }
+            
+            input[type="range"] {
+                height: 44px;
+                margin: 6px 0;
+                -webkit-appearance: none;
+                background: #333;
+                border-radius: 5px;
+            }
+            
+            input[type="range"]::-webkit-slider-thumb {
+                -webkit-appearance: none;
+                height: 30px;
+                width: 30px;
+                border-radius: 50%;
+                background: #4CAF50;
+                cursor: pointer;
+            }
+        }
+
+        @media (min-width: 481px) and (max-width: 768px) {
+            .control-group {
+                margin-bottom: 12px;
+            }
+            
+            .control-group label {
+                font-size: 13px;
+                margin-bottom: 8px;
+            }
+            
+            button {
+                padding: 12px 16px;
+                margin: 3px;
+                font-size: 13px;
+                min-height: 44px; /* iOS touch target minimum */
+                min-width: 44px;
+            }
+            
+            select {
+                min-height: 44px !important;
+                font-size: 13px !important;
+            }
+            
+            input[type="range"] {
+                height: 44px;
+                margin: 8px 0;
+            }
+        }
+
+        /* Tablet button adjustments */
+        @media (min-width: 769px) and (max-width: 1024px) {
+            .control-group {
+                margin-bottom: 16px;
+            }
+            
+            .control-group label {
+                font-size: 14px;
+                margin-bottom: 10px;
+            }
+            
+            button {
+                padding: 12px 18px;
+                margin: 4px;
+                font-size: 14px;
+                min-height: 40px;
+                min-width: 40px;
+            }
+            
+            select {
+                min-height: 40px;
+                font-size: 14px;
+                padding: 10px 14px;
+            }
+            
+            input[type="range"] {
+                height: 40px;
+                margin: 10px 0;
+            }
+        }
+
+        button:hover {
+            background: #45a049;
+        }
+
+        button.active {
+            background: #2196F3;
+        }
+
+        select {
+            background: #333;
+            color: white;
+            border: 1px solid #555;
+            padding: 8px 12px;
+            border-radius: 5px;
+            font-size: 14px;
+            margin: 5px;
+            min-width: 120px;
+        }
+
+        select:focus {
+            outline: none;
+            border-color: #4CAF50;
+        }
+
+        #planet-info {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            z-index: 100;
+            background: rgba(0, 0, 0, 0.8);
+            padding: 20px;
+            border-radius: 10px;
+            backdrop-filter: blur(10px);
+            max-width: 300px;
+            display: none;
+        }
+
+        /* Mobile planet info adjustments */
+        @media (max-width: 480px) {
+            #planet-info {
+                position: fixed;
+                top: 50%;
+                left: 50%;
+                transform: translate(-50%, -50%);
+                right: auto;
+                max-width: 95vw;
+                max-height: 85vh;
+                overflow-y: auto;
+                padding: 12px;
+                font-size: 12px;
+            }
+            
+            #planet-info h3 {
+                font-size: 16px;
+                margin-bottom: 10px;
+            }
+            
+            #planet-info p {
+                font-size: 12px;
+                margin-bottom: 8px;
+                line-height: 1.4;
+            }
+            
+            .close-btn {
+                width: 28px;
+                height: 28px;
+                font-size: 16px;
+                top: 6px;
+                right: 6px;
+            }
+        }
+
+        @media (min-width: 481px) and (max-width: 768px) {
+            #planet-info {
+                position: fixed;
+                top: 50%;
+                left: 50%;
+                transform: translate(-50%, -50%);
+                right: auto;
+                max-width: 90vw;
+                max-height: 80vh;
+                overflow-y: auto;
+                padding: 15px;
+            }
+            
+            #planet-info h3 {
+                font-size: 18px;
+                margin-bottom: 12px;
+            }
+            
+            #planet-info p {
+                font-size: 14px;
+                margin-bottom: 10px;
+            }
+            
+            .close-btn {
+                width: 30px;
+                height: 30px;
+                font-size: 18px;
+                top: 8px;
+                right: 8px;
+            }
+        }
+
+        /* Tablet planet info adjustments */
+        @media (min-width: 769px) and (max-width: 1024px) {
+            #planet-info {
+                position: absolute;
+                top: 20px;
+                right: 20px;
+                max-width: 350px;
+                padding: 18px;
+            }
+            
+            #planet-info h3 {
+                font-size: 20px;
+                margin-bottom: 14px;
+            }
+            
+            #planet-info p {
+                font-size: 15px;
+                margin-bottom: 12px;
+            }
+            
+            .close-btn {
+                width: 32px;
+                height: 32px;
+                font-size: 20px;
+                top: 10px;
+                right: 10px;
+            }
+        }
+
+        #observation-tooltip {
+            position: absolute;
+            bottom: 80px;
+            left: 20px;
+            right: 20px;
+            z-index: 100;
+            background: rgba(0, 50, 100, 0.9);
+            padding: 15px;
+            border-radius: 10px;
+            backdrop-filter: blur(10px);
+            border-left: 4px solid #4CAF50;
+            max-height: 150px;
+            overflow-y: auto;
+        }
+
+        /* Mobile tooltip adjustments */
+        @media (max-width: 480px) {
+            #observation-tooltip {
+                position: fixed;
+                bottom: 70px;
+                left: 8px;
+                right: 8px;
+                padding: 10px;
+                max-height: 100px;
+                font-size: 11px;
+            }
+            
+            #observation-tooltip h4 {
+                font-size: 12px;
+                margin-bottom: 6px;
+            }
+            
+            #observation-tooltip p {
+                font-size: 10px;
+                line-height: 1.2;
+            }
+        }
+
+        @media (min-width: 481px) and (max-width: 768px) {
+            #observation-tooltip {
+                position: fixed;
+                bottom: 80px;
+                left: 10px;
+                right: 10px;
+                padding: 12px;
+                max-height: 120px;
+                font-size: 13px;
+            }
+            
+            #observation-tooltip h4 {
+                font-size: 14px;
+                margin-bottom: 8px;
+            }
+            
+            #observation-tooltip p {
+                font-size: 12px;
+                line-height: 1.3;
+            }
+        }
+
+        /* Tablet tooltip adjustments */
+        @media (min-width: 769px) and (max-width: 1024px) {
+            #observation-tooltip {
+                bottom: 90px;
+                left: 15px;
+                right: 15px;
+                padding: 16px;
+                max-height: 140px;
+                font-size: 14px;
+            }
+            
+            #observation-tooltip h4 {
+                font-size: 16px;
+                margin-bottom: 10px;
+            }
+            
+            #observation-tooltip p {
+                font-size: 13px;
+                line-height: 1.4;
+            }
+        }
+
+        #observation-tooltip h4 {
+            color: #4CAF50;
+            margin: 0 0 10px 0;
+            font-size: 16px;
+        }
+
+        #observation-tooltip p {
+            margin: 0;
+            line-height: 1.4;
+            font-size: 14px;
+        }
+
+        .tooltip-toggle {
+            position: absolute;
+            bottom: 80px;
+            right: 20px;
+            z-index: 101;
+            background: #4CAF50;
+            border: none;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            color: white;
+            font-size: 18px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            touch-action: manipulation;
+        }
+
+        /* Mobile tooltip toggle adjustments */
+        @media (max-width: 480px) {
+            .tooltip-toggle {
+                position: fixed;
+                bottom: 15px;
+                right: 15px;
+                width: 45px;
+                height: 45px;
+                font-size: 18px;
+            }
+        }
+
+        @media (min-width: 481px) and (max-width: 768px) {
+            .tooltip-toggle {
+                position: fixed;
+                bottom: 20px;
+                right: 20px;
+                width: 50px;
+                height: 50px;
+                font-size: 20px;
+            }
+        }
+
+        /* Tablet tooltip toggle adjustments */
+        @media (min-width: 769px) and (max-width: 1024px) {
+            .tooltip-toggle {
+                bottom: 90px;
+                right: 25px;
+                width: 45px;
+                height: 45px;
+                font-size: 19px;
+            }
+        }
+
+        /* Enhanced landscape orientation support */
+        @media screen and (orientation: landscape) and (max-width: 768px) {
+            #controls {
+                margin-top: 40px;
+                max-height: 60vh;
+                overflow-y: auto;
+                scrollbar-width: thin;
+            }
+            
+            #controls::-webkit-scrollbar {
+                width: 4px;
+            }
+            
+            #controls::-webkit-scrollbar-track {
+                background: rgba(255, 255, 255, 0.1);
+            }
+            
+            #controls::-webkit-scrollbar-thumb {
+                background: rgba(255, 255, 255, 0.3);
+                border-radius: 2px;
+            }
+            
+            #planet-info {
+                max-height: 60vh;
+                max-width: 45vw;
+            }
+            
+            #observation-tooltip {
+                max-height: 60px;
+                font-size: 11px;
+                bottom: 60px;
+            }
+            
+            .tooltip-toggle {
+                bottom: 10px;
+                width: 40px;
+                height: 40px;
+                font-size: 16px;
+            }
+            
+            .mobile-controls-toggle {
+                width: 40px;
+                height: 40px;
+                font-size: 16px;
+            }
+        }
+
+        .tooltip-toggle:hover {
+            background: #45a049;
+        }
+
+        #planet-info h3 {
+            color: #4CAF50;
+            margin-bottom: 10px;
+        }
+
+        #planet-info p {
+            margin-bottom: 8px;
+            line-height: 1.4;
+        }
+
+        .close-btn {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: #f44336;
+            width: 25px;
+            height: 25px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+            padding: 0;
+        }
+
+        #loading {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 200;
+            text-align: center;
+        }
+
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #3498db;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .hidden {
+            display: none !important;
+        }
+    </style>
+</head>
+<body>
+<a href="/t/index.html" style="position:fixed;top:10px;left:50%;transform:translateX(-50%);z-index:300;text-decoration:none;background:rgba(0,0,0,0.55);color:#fff;border:1px solid rgba(255,255,255,0.3);border-radius:999px;padding:6px 14px;font-size:14px;">🧰 工具箱</a>
+    <div id="loading">
+        <div class="spinner"></div>
+        <p data-en="Loading Solar System..." data-zh="正在加载太阳系...">Loading Solar System...</p>
+    </div>
+
+    <button class="mobile-controls-toggle" onclick="toggleMobileControls()">☰</button>
+
+    <div id="container">
+        <div id="controls">
+            <div class="control-group">
+                <label data-en="Language / 语言" data-zh="语言 / Language">Language / 语言</label>
+                <button id="lang-en" class="active" onclick="setLanguage('en')">English</button>
+                <button id="lang-zh" onclick="setLanguage('zh')">中文</button>
+            </div>
+            
+            <div class="control-group">
+                <label data-en="View Mode" data-zh="视图模式">View Mode</label>
+                <button id="mode-3d" class="active" onclick="setViewMode('3d')" data-en="3D View" data-zh="3D视图">3D View</button>
+                <button id="mode-2d" onclick="setViewMode('2d')" data-en="2D View" data-zh="2D视图">2D View</button>
+            </div>
+            
+            <div class="control-group">
+                <label data-en="Animation" data-zh="动画">Animation</label>
+                <button id="toggle-animation" onclick="toggleAnimation()" data-en="Pause" data-zh="暂停">Pause</button>
+                <button onclick="resetView()" data-en="Reset View" data-zh="重置视图">Reset View</button>
+            </div>
+            
+            <div class="control-group">
+                <label data-en="Speed" data-zh="速度">Speed</label>
+                <input type="range" id="speed-slider" min="0.1" max="5" step="0.1" value="1" onchange="setAnimationSpeed(this.value)">
+                <span id="speed-value">1x</span>
+            </div>
+            
+            <div class="control-group">
+                <label data-en="Observation Center" data-zh="观测中心">Observation Center</label>
+                <select id="observation-center" onchange="setObservationCenter(this.value)">
+                    <option value="sun" data-en="Sun" data-zh="太阳">Sun</option>
+                    <option value="mercury" data-en="Mercury" data-zh="水星">Mercury</option>
+                    <option value="venus" data-en="Venus" data-zh="金星">Venus</option>
+                    <option value="earth" data-en="Earth" data-zh="地球">Earth</option>
+                    <option value="mars" data-en="Mars" data-zh="火星">Mars</option>
+                    <option value="jupiter" data-en="Jupiter" data-zh="木星">Jupiter</option>
+                    <option value="saturn" data-en="Saturn" data-zh="土星">Saturn</option>
+                    <option value="uranus" data-en="Uranus" data-zh="天王星">Uranus</option>
+                    <option value="neptune" data-en="Neptune" data-zh="海王星">Neptune</option>
+                </select>
+                <button onclick="followPlanet()" id="follow-btn" data-en="Follow Planet" data-zh="跟随行星">Follow Planet</button>
+            </div>
+            
+            <div class="control-group">
+                <label data-en="Display Options" data-zh="显示选项">Display Options</label>
+                <button id="toggle-orbits" onclick="toggleOrbits()" data-en="Hide Orbits" data-zh="隐藏轨道">Hide Orbits</button>
+                <button id="toggle-moons" onclick="toggleMoons()" data-en="Hide Moons" data-zh="隐藏卫星">Hide Moons</button>
+                <button id="toggle-asteroids" onclick="toggleAsteroids()" data-en="Hide Asteroids" data-zh="隐藏小行星">Hide Asteroids</button>
+                <button id="explore-planets" onclick="toggleExplorePlanetsMode()" data-en="Explore Planets" data-zh="探索行星">Explore Planets</button>
+            </div>
+            
+            <div class="control-group" id="explore-zoom-controls" style="display: none;">
+                <label data-en="Explore Zoom" data-zh="探索缩放">Explore Zoom</label>
+                <div style="display: flex; align-items: center; gap: 5px; flex-wrap: wrap;">
+                    <button onclick="zoomOut()" data-en="Zoom Out" data-zh="缩小" title="Zoom Out">−</button>
+                    <input type="range" id="explore-zoom-slider" min="0.5" max="5" step="0.1" value="1" onchange="setExploreZoom(this.value)" style="flex: 1; min-width: 100px;">
+                    <button onclick="zoomIn()" data-en="Zoom In" data-zh="放大" title="Zoom In">+</button>
+                    <span id="explore-zoom-value" style="min-width: 35px; text-align: center;">1x</span>
+                </div>
+                <button onclick="resetExploreZoom()" data-en="Reset Zoom" data-zh="重置缩放" style="margin-top: 5px;">Reset Zoom</button>
+            </div>
+            
+            <div class="control-group">
+                <label data-en="Mobile Settings" data-zh="移动设备设置">Mobile Settings</label>
+                <button id="toggle-haptic" onclick="toggleHaptic()" data-en="Haptic: ON" data-zh="触觉反馈: 开">Haptic: ON</button>
+            </div>
+        </div>
+
+        <div id="planet-info">
+            <button class="close-btn" onclick="closePlanetInfo()">×</button>
+            <h3 id="planet-name"></h3>
+            <p><strong data-en="Distance from Sun:" data-zh="距离太阳:">Distance from Sun:</strong> <span id="planet-distance"></span></p>
+            <p><strong data-en="Diameter:" data-zh="直径:">Diameter:</strong> <span id="planet-diameter"></span></p>
+            <p><strong data-en="Orbital Period:" data-zh="公转周期:">Orbital Period:</strong> <span id="planet-period"></span></p>
+            <p><strong data-en="Description:" data-zh="描述:">Description:</strong></p>
+            <p id="planet-description"></p>
+        </div>
+
+        <div id="observation-tooltip">
+            <h4 id="tooltip-title" data-en="Observing from the Sun" data-zh="从太阳观测">Observing from the Sun</h4>
+            <p id="tooltip-content" data-en="You are observing the solar system from the Sun's perspective. All planets orbit around your position." data-zh="您正在从太阳的角度观察太阳系。所有行星都围绕您的位置运行。">You are observing the solar system from the Sun's perspective. All planets orbit around your position.</p>
+        </div>
+
+        <button class="tooltip-toggle" onclick="toggleTooltip()" title="Toggle Educational Tips">?</button>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+    <script>
+        // Global variables
+        let scene, camera, renderer, controls;
+        let planets = [];
+        let moons = [];
+        let asteroids = [];
+        let sun;
+        let animationSpeed = 1;
+        let isAnimating = true;
+        let currentViewMode = '3d';
+        let currentLanguage = 'en';
+        let showOrbits = true;
+        let showMoons = true;
+        let showAsteroids = true;
+        let observationCenter = 'sun';
+        let followMode = false;
+        let cameraOffset = { x: 0, y: 20, z: 50 };
+        let showTooltip = true;
+        let hapticEnabled = true;
+        let explorePlanetsMode = false;
+        let selectedPlanetForExplore = null;
+        let exploreZoomLevel = 1;
+        let baseExploreDistance = 30;
+
+        // Planet data
+        const planetData = {
+            sun: {
+                name: { en: 'Sun', zh: '太阳' },
+                radius: 5,
+                distance: 0,
+                speed: 0,
+                color: 0xFDB813,
+                description: {
+                    en: 'The Sun is the star at the center of the Solar System. It is a nearly perfect sphere of hot plasma.',
+                    zh: '太阳是太阳系中心的恒星，是一个几乎完美的热等离子体球。'
+                },
+                diameter: '1,392,700 km',
+                period: 'N/A'
+            },
+            mercury: {
+                name: { en: 'Mercury', zh: '水星' },
+                radius: 0.8,
+                distance: 15,
+                speed: 0.02,
+                color: 0x8C7853,
+                description: {
+                    en: 'Mercury is the smallest planet in our solar system and closest to the Sun.',
+                    zh: '水星是太阳系中最小的行星，也是距离太阳最近的行星。'
+                },
+                diameter: '4,879 km',
+                period: '88 days'
+            },
+            venus: {
+                name: { en: 'Venus', zh: '金星' },
+                radius: 1.2,
+                distance: 22,
+                speed: 0.015,
+                color: 0xFFC649,
+                description: {
+                    en: 'Venus is the second planet from the Sun and is Earth\'s closest planetary neighbor.',
+                    zh: '金星是距离太阳第二近的行星，是地球最近的行星邻居。'
+                },
+                diameter: '12,104 km',
+                period: '225 days'
+            },
+            earth: {
+                name: { en: 'Earth', zh: '地球' },
+                radius: 1.3,
+                distance: 30,
+                speed: 0.01,
+                color: 0x6B93D6,
+                description: {
+                    en: 'Earth is the third planet from the Sun and the only known planet to harbor life. It has one natural satellite, the Moon.',
+                    zh: '地球是距离太阳第三近的行星，也是已知唯一有生命存在的行星。它有一颗天然卫星——月球。'
+                },
+                diameter: '12,756 km',
+                period: '365 days',
+                moons: [{
+                    name: { en: 'Moon', zh: '月球' },
+                    radius: 0.3,
+                    distance: 3,
+                    speed: 0.05,
+                    color: 0xC0C0C0,
+                    description: {
+                        en: 'The Moon is Earth\'s only natural satellite and the fifth largest moon in the Solar System.',
+                        zh: '月球是地球唯一的天然卫星，也是太阳系中第五大的卫星。'
+                    }
+                }]
+            },
+            mars: {
+                name: { en: 'Mars', zh: '火星' },
+                radius: 1.0,
+                distance: 40,
+                speed: 0.008,
+                color: 0xC1440E,
+                description: {
+                    en: 'Mars is the fourth planet from the Sun and is known as the Red Planet.',
+                    zh: '火星是距离太阳第四近的行星，被称为红色星球。'
+                },
+                diameter: '6,792 km',
+                period: '687 days'
+            },
+            jupiter: {
+                name: { en: 'Jupiter', zh: '木星' },
+                radius: 3.5,
+                distance: 60,
+                speed: 0.005,
+                color: 0xD8CA9D,
+                description: {
+                    en: 'Jupiter is the largest planet in our solar system and is known for its Great Red Spot. It has 95 known moons including the four largest: Io, Europa, Ganymede, and Callisto.',
+                    zh: '木星是太阳系中最大的行星，以其大红斑而闻名。它有95颗已知卫星，包括四颗最大的：木卫一、木卫二、木卫三和木卫四。'
+                },
+                diameter: '142,984 km',
+                period: '12 years',
+                moons: [
+                    {
+                        name: { en: 'Io', zh: '木卫一' },
+                        radius: 0.2,
+                        distance: 5,
+                        speed: 0.08,
+                        color: 0xFFFF99,
+                        description: {
+                            en: 'Io is the most volcanically active body in the Solar System.',
+                            zh: '木卫一是太阳系中火山活动最活跃的天体。'
+                        }
+                    },
+                    {
+                        name: { en: 'Europa', zh: '木卫二' },
+                        radius: 0.18,
+                        distance: 6.5,
+                        speed: 0.06,
+                        color: 0xADD8E6,
+                        description: {
+                            en: 'Europa has a subsurface ocean that may harbor life.',
+                            zh: '木卫二有一个可能孕育生命的地下海洋。'
+                        }
+                    },
+                    {
+                        name: { en: 'Ganymede', zh: '木卫三' },
+                        radius: 0.25,
+                        distance: 8,
+                        speed: 0.04,
+                        color: 0x8B7D6B,
+                        description: {
+                            en: 'Ganymede is the largest moon in the Solar System.',
+                            zh: '木卫三是太阳系中最大的卫星。'
+                        }
+                    },
+                    {
+                        name: { en: 'Callisto', zh: '木卫四' },
+                        radius: 0.22,
+                        distance: 10,
+                        speed: 0.03,
+                        color: 0x696969,
+                        description: {
+                            en: 'Callisto is the most heavily cratered object in the Solar System.',
+                            zh: '木卫四是太阳系中陨石坑最多的天体。'
+                        }
+                    }
+                ]
+            },
+            saturn: {
+                name: { en: 'Saturn', zh: '土星' },
+                radius: 3.0,
+                distance: 80,
+                speed: 0.003,
+                color: 0xFAD5A5,
+                description: {
+                    en: 'Saturn is the sixth planet from the Sun and is famous for its prominent ring system. It has 146 known moons, with Titan being the largest.',
+                    zh: '土星是距离太阳第六近的行星，以其突出的环系统而闻名。它有146颗已知卫星，其中土卫六是最大的。'
+                },
+                diameter: '120,536 km',
+                period: '29 years',
+                hasRings: true,
+                moons: [
+                    {
+                        name: { en: 'Titan', zh: '土卫六' },
+                        radius: 0.24,
+                        distance: 7,
+                        speed: 0.04,
+                        color: 0xFFA500,
+                        description: {
+                            en: 'Titan has a thick atmosphere and liquid methane lakes.',
+                            zh: '土卫六有浓厚的大气层和液态甲烷湖泊。'
+                        }
+                    },
+                    {
+                        name: { en: 'Enceladus', zh: '土卫二' },
+                        radius: 0.12,
+                        distance: 5,
+                        speed: 0.06,
+                        color: 0xF0F8FF,
+                        description: {
+                            en: 'Enceladus has geysers of water ice erupting from its south pole.',
+                            zh: '土卫二的南极有水冰间歇泉喷发。'
+                        }
+                    }
+                ]
+            },
+            uranus: {
+                name: { en: 'Uranus', zh: '天王星' },
+                radius: 2.0,
+                distance: 100,
+                speed: 0.002,
+                color: 0x4FD0E7,
+                description: {
+                    en: 'Uranus is the seventh planet from the Sun and rotates on its side.',
+                    zh: '天王星是距离太阳第七近的行星，侧着旋转。'
+                },
+                diameter: '51,118 km',
+                period: '84 years'
+            },
+            neptune: {
+                name: { en: 'Neptune', zh: '海王星' },
+                radius: 1.9,
+                distance: 120,
+                speed: 0.001,
+                color: 0x4B70DD,
+                description: {
+                    en: 'Neptune is the eighth and outermost planet in our solar system.',
+                    zh: '海王星是太阳系中第八颗也是最外层的行星。'
+                },
+                diameter: '49,528 km',
+                period: '165 years'
+            }
+        };
+
+        // Educational tooltips for each observation center
+        const observationTooltips = {
+            sun: {
+                title: { en: 'Observing from the Sun', zh: '从太阳观测' },
+                content: { 
+                    en: 'You are at the center of our solar system! From here, you can see all planets orbiting around you. Notice how inner planets (Mercury, Venus, Earth, Mars) move faster than outer planets. The Sun\'s immense gravity keeps everything in orbit.',
+                    zh: '您位于太阳系的中心！从这里，您可以看到所有行星围绕您运行。注意内行星（水星、金星、地球、火星）比外行星移动得更快。太阳巨大的引力使一切都保持在轨道上。'
+                }
+            },
+            mercury: {
+                title: { en: 'Observing from Mercury', zh: '从水星观测' },
+                content: { 
+                    en: 'From Mercury, the Sun appears 2.5 times larger than from Earth! You\'re on the fastest planet - completing an orbit in just 88 Earth days. Venus and Earth appear as bright "stars" in your sky, while outer planets are barely visible.',
+                    zh: '从水星看，太阳比从地球看大2.5倍！您在最快的行星上——仅用88个地球日就完成一次轨道运行。金星和地球在您的天空中显得像明亮的"星星"，而外行星几乎看不见。'
+                }
+            },
+            venus: {
+                title: { en: 'Observing from Venus', zh: '从金星观测' },
+                content: { 
+                    en: 'Venus has the thickest atmosphere of any rocky planet! From here, Earth appears as a blue dot, while Mercury zips quickly between you and the Sun. The outer planets are distant points of light in your cloudy, greenhouse-effect sky.',
+                    zh: '金星拥有所有岩石行星中最厚的大气层！从这里，地球看起来像一个蓝点，而水星在您和太阳之间快速移动。外行星在您多云的温室效应天空中是遥远的光点。'
+                }
+            },
+            earth: {
+                title: { en: 'Observing from Earth', zh: '从地球观测' },
+                content: { 
+                    en: 'Welcome home! From Earth, you can see the Moon orbiting nearby. Mercury and Venus appear as "morning" and "evening stars." Mars shows a reddish tint, while Jupiter and Saturn are visible as bright dots. This is the view that inspired humanity to explore space!',
+                    zh: '欢迎回家！从地球上，您可以看到月球在附近运行。水星和金星显得像"晨星"和"昏星"。火星呈现红色，而木星和土星看起来像明亮的点。正是这种景象激发了人类探索太空！'
+                }
+            },
+            mars: {
+                title: { en: 'Observing from Mars', zh: '从火星观测' },
+                content: { 
+                    en: 'From Mars, Earth and Venus appear as bright blue and white dots. You can see Phobos and Deimos, Mars\' two small moons. The asteroid belt is much closer here - you\'re on the edge of the inner solar system looking out at the gas giants.',
+                    zh: '从火星看，地球和金星看起来像明亮的蓝色和白色点。您可以看到火卫一和火卫二，火星的两颗小卫星。小行星带在这里更近——您在内太阳系的边缘向外看气态巨行星。'
+                }
+            },
+            jupiter: {
+                title: { en: 'Observing from Jupiter', zh: '从木星观测' },
+                content: { 
+                    en: 'You\'re on the largest planet! Jupiter\'s 95 moons create a mini solar system. The four largest moons (Io, Europa, Ganymede, Callisto) are easily visible. From here, the inner planets appear very close to the Sun, while Saturn shows its rings clearly.',
+                    zh: '您在最大的行星上！木星的95颗卫星形成了一个迷你太阳系。四颗最大的卫星（木卫一、木卫二、木卫三、木卫四）清晰可见。从这里，内行星看起来非常靠近太阳，而土星清楚地显示其环。'
+                }
+            },
+            saturn: {
+                title: { en: 'Observing from Saturn', zh: '从土星观测' },
+                content: { 
+                    en: 'Saturn\'s magnificent rings dominate your view! With 146 moons, including giant Titan with its thick atmosphere, you\'re in a complex system. The inner planets are now just bright points near the distant Sun, while Uranus and Neptune are faint neighbors.',
+                    zh: '土星壮丽的环主导着您的视野！拥有146颗卫星，包括有着厚厚大气层的巨大土卫六，您处在一个复杂的系统中。内行星现在只是遥远太阳附近的明亮点，而天王星和海王星是微弱的邻居。'
+                }
+            },
+            uranus: {
+                title: { en: 'Observing from Uranus', zh: '从天王星观测' },
+                content: { 
+                    en: 'Uranus rotates on its side, giving you a unique perspective! From this ice giant, the Sun appears as just a bright star. The inner solar system is a distant cluster of lights, while Neptune is your only nearby planetary companion in the outer darkness.',
+                    zh: '天王星侧着旋转，给您独特的视角！从这个冰巨星看，太阳只是一颗明亮的星星。内太阳系是一个遥远的光点群，而海王星是您在外层黑暗中唯一的近邻行星伙伴。'
+                }
+            },
+            neptune: {
+                title: { en: 'Observing from Neptune', zh: '从海王星观测' },
+                content: { 
+                    en: 'You\'re at the edge of our solar system! From Neptune, the Sun is 900 times dimmer than from Earth. The entire inner solar system appears as a small cluster of lights. You\'re in the realm of the Kuiper Belt, where dwarf planets and comets originate.',
+                    zh: '您在太阳系的边缘！从海王星看，太阳比从地球看暗900倍。整个内太阳系看起来像一小群光点。您在柯伊伯带的领域，矮行星和彗星的起源地。'
+                }
+            }
+        };
+
+        // Initialize the scene
+        function init() {
+            // Create scene
+            scene = new THREE.Scene();
+            
+            // Create camera
+            camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+            camera.position.set(0, 50, 100);
+            
+            // Create renderer
+            renderer = new THREE.WebGLRenderer({ antialias: true });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.setClearColor(0x000011);
+            document.getElementById('container').appendChild(renderer.domElement);
+            
+            // Add controls
+            controls = new THREE.OrbitControls(camera, renderer.domElement);
+            controls.enableDamping = true;
+            controls.dampingFactor = 0.05;
+            
+            // Device-specific control settings
+            const deviceType = getDeviceType();
+            
+            if (deviceType === 'mobile-small') {
+                controls.enablePan = true;
+                controls.enableZoom = true;
+                controls.enableRotate = true;
+                controls.rotateSpeed = 0.4;
+                controls.zoomSpeed = 0.6;
+                controls.panSpeed = 0.6;
+                controls.minDistance = 20;
+                controls.maxDistance = 300;
+                controls.touches = {
+                    ONE: THREE.TOUCH.ROTATE,
+                    TWO: THREE.TOUCH.DOLLY_PAN
+                };
+            } else if (deviceType === 'mobile') {
+                controls.enablePan = true;
+                controls.enableZoom = true;
+                controls.enableRotate = true;
+                controls.rotateSpeed = 0.5;
+                controls.zoomSpeed = 0.8;
+                controls.panSpeed = 0.8;
+                controls.minDistance = 15;
+                controls.maxDistance = 400;
+                controls.touches = {
+                    ONE: THREE.TOUCH.ROTATE,
+                    TWO: THREE.TOUCH.DOLLY_PAN
+                };
+            } else if (deviceType === 'tablet') {
+                controls.enablePan = true;
+                controls.enableZoom = true;
+                controls.enableRotate = true;
+                controls.rotateSpeed = 0.7;
+                controls.zoomSpeed = 1.0;
+                controls.panSpeed = 1.0;
+                controls.minDistance = 10;
+                controls.maxDistance = 500;
+                controls.touches = {
+                    ONE: THREE.TOUCH.ROTATE,
+                    TWO: THREE.TOUCH.DOLLY_PAN
+                };
+            }
+            
+            // Add lighting
+            const ambientLight = new THREE.AmbientLight(0x404040, 0.3);
+            scene.add(ambientLight);
+            
+            const pointLight = new THREE.PointLight(0xffffff, 1, 300);
+            pointLight.position.set(0, 0, 0);
+            scene.add(pointLight);
+            
+            // Create stars
+            createStars();
+            
+            // Create sun and planets
+            createSun();
+            createPlanets();
+            createMoons();
+            createAsteroidBelt();
+            
+            // Setup mobile optimizations
+            setupTouchEvents();
+            
+            // Initial layout adjustment for all devices
+            if (isMobileDevice()) {
+                adjustMobileLayout();
+            }
+            
+            // Set initial toggle button state for all devices
+            initializeControlsToggle();
+            
+            // Hide loading screen
+            document.getElementById('loading').classList.add('hidden');
+            
+            // Start animation
+            animate();
+        }
+
+        function createStars() {
+            const starsGeometry = new THREE.BufferGeometry();
+            const starsMaterial = new THREE.PointsMaterial({ color: 0xFFFFFF });
+            
+            const starsVertices = [];
+            for (let i = 0; i < 10000; i++) {
+                const x = (Math.random() - 0.5) * 2000;
+                const y = (Math.random() - 0.5) * 2000;
+                const z = (Math.random() - 0.5) * 2000;
+                starsVertices.push(x, y, z);
+            }
+            
+            starsGeometry.setAttribute('position', new THREE.Float32BufferAttribute(starsVertices, 3));
+            const stars = new THREE.Points(starsGeometry, starsMaterial);
+            scene.add(stars);
+        }
+
+        function createSun() {
+            const sunGeometry = new THREE.SphereGeometry(planetData.sun.radius, 32, 32);
+            const sunMaterial = new THREE.MeshLambertMaterial({ 
+                color: planetData.sun.color,
+                emissive: planetData.sun.color
+            });
+            sun = new THREE.Mesh(sunGeometry, sunMaterial);
+            sun.userData = { planetKey: 'sun', data: planetData.sun };
+            scene.add(sun);
+        }
+
+        function createPlanets() {
+            Object.keys(planetData).forEach(key => {
+                if (key === 'sun') return;
+                
+                const data = planetData[key];
+                const geometry = new THREE.SphereGeometry(data.radius, 16, 16);
+                const material = new THREE.MeshLambertMaterial({ color: data.color });
+                const planet = new THREE.Mesh(geometry, material);
+                
+                planet.position.x = data.distance;
+                planet.userData = { 
+                    planetKey: key,
+                    name: data.name,
+                    data: data,
+                    angle: Math.random() * Math.PI * 2,
+                    distance: data.distance,
+                    speed: data.speed
+                };
+                
+                // Add orbit line (dotted track lines)
+                const orbitPoints = [];
+                const segments = 120; // Number of segments for dotted effect
+                for (let i = 0; i <= segments; i++) {
+                    const angle = (i / segments) * Math.PI * 2;
+                    const x = Math.cos(angle) * data.distance;
+                    const z = Math.sin(angle) * data.distance;
+                    orbitPoints.push(new THREE.Vector3(x, 0, z));
+                }
+                
+                const orbitGeometry = new THREE.BufferGeometry().setFromPoints(orbitPoints);
+                const orbitMaterial = new THREE.LineDashedMaterial({
+                    color: 0x88AAFF,
+                    transparent: true,
+                    opacity: 0.8,
+                    dashSize: 2,
+                    gapSize: 1
+                });
+                
+                const orbit = new THREE.Line(orbitGeometry, orbitMaterial);
+                orbit.computeLineDistances(); // Required for dashed lines
+                orbit.userData = { 
+                    type: 'orbit',
+                    planet: data.name.en
+                };
+                scene.add(orbit);
+                
+                // Add rings for Saturn
+                if (data.hasRings) {
+                    const ringGeometry = new THREE.RingGeometry(data.radius + 0.5, data.radius + 2, 32);
+                    const ringMaterial = new THREE.MeshBasicMaterial({ 
+                        color: 0xC4A484, 
+                        side: THREE.DoubleSide,
+                        transparent: true,
+                        opacity: 0.6
+                    });
+                    const rings = new THREE.Mesh(ringGeometry, ringMaterial);
+                    rings.rotation.x = Math.PI / 2;
+                    rings.userData = { type: 'rings', parent: planet };
+                    scene.add(rings);
+                }
+                
+                planets.push(planet);
+                scene.add(planet);
+            });
+            
+            // Add click event listener
+            addClickListener();
+        }
+
+        function createMoons() {
+            Object.keys(planetData).forEach(planetKey => {
+                if (planetKey === 'sun' || !planetData[planetKey].moons) return;
+                
+                const planetData_item = planetData[planetKey];
+                planetData_item.moons.forEach(moonData => {
+                    const geometry = new THREE.SphereGeometry(moonData.radius, 8, 8);
+                    const material = new THREE.MeshLambertMaterial({ color: moonData.color });
+                    const moon = new THREE.Mesh(geometry, material);
+                    
+                    moon.userData = {
+                        planetKey: planetKey,
+                        data: moonData,
+                        angle: Math.random() * Math.PI * 2,
+                        distance: moonData.distance,
+                        speed: moonData.speed,
+                        parentDistance: planetData_item.distance,
+                        parent: planetData_item.name.en,
+                        type: 'moon'
+                    };
+                    
+                    // Create moon orbit
+                    const moonOrbitPoints = [];
+                    const segments = 60;
+                    for (let i = 0; i <= segments; i++) {
+                        const angle = (i / segments) * Math.PI * 2;
+                        const x = Math.cos(angle) * moonData.distance;
+                        const z = Math.sin(angle) * moonData.distance;
+                        moonOrbitPoints.push(new THREE.Vector3(x, 0, z));
+                    }
+                    
+                    const moonOrbitGeometry = new THREE.BufferGeometry().setFromPoints(moonOrbitPoints);
+                    const moonOrbitMaterial = new THREE.LineDashedMaterial({
+                        color: 0xAABBFF,
+                        transparent: true,
+                        opacity: 0.6,
+                        dashSize: 1,
+                        gapSize: 0.5
+                    });
+                    
+                    const moonOrbit = new THREE.Line(moonOrbitGeometry, moonOrbitMaterial);
+                    moonOrbit.computeLineDistances();
+                    moonOrbit.userData = { 
+                        type: 'orbit',
+                        parent: planetData_item.name.en,
+                        isMoonOrbit: true
+                    };
+                    scene.add(moonOrbit);
+                    
+                    moons.push(moon);
+                    scene.add(moon);
+                });
+            });
+        }
+
+        function createAsteroidBelt() {
+            // Create asteroid belt between Mars and Jupiter
+            for (let i = 0; i < 200; i++) {
+                const geometry = new THREE.SphereGeometry(Math.random() * 0.1 + 0.02, 4, 4);
+                const material = new THREE.MeshLambertMaterial({ color: 0x8C7853 });
+                const asteroid = new THREE.Mesh(geometry, material);
+                
+                const distance = 45 + Math.random() * 10; // Between Mars (40) and Jupiter (60)
+                const angle = Math.random() * Math.PI * 2;
+                
+                asteroid.position.x = Math.cos(angle) * distance;
+                asteroid.position.z = Math.sin(angle) * distance;
+                asteroid.position.y = (Math.random() - 0.5) * 2;
+                
+                asteroid.userData = {
+                    angle: angle,
+                    distance: distance,
+                    speed: 0.006 + Math.random() * 0.002,
+                    type: 'asteroid'
+                };
+                
+                asteroids.push(asteroid);
+                scene.add(asteroid);
+            }
+        }
+
+        function addClickListener() {
+            const raycaster = new THREE.Raycaster();
+            const mouse = new THREE.Vector2();
+            
+            // Double-tap detection for mobile devices
+            let lastTapTime = 0;
+            let tapCount = 0;
+            const doubleTapDelay = 300; // milliseconds
+            
+            // Handle both click and touch events
+            function handleInteraction(event) {
+                let clientX, clientY;
+                
+                if (event.type === 'touchend') {
+                    if (event.changedTouches.length === 0) return;
+                    clientX = event.changedTouches[0].clientX;
+                    clientY = event.changedTouches[0].clientY;
+                    
+                    // Double-tap detection for mobile devices
+                    const currentTime = Date.now();
+                    if (currentTime - lastTapTime < doubleTapDelay) {
+                        tapCount++;
+                    } else {
+                        tapCount = 1;
+                    }
+                    lastTapTime = currentTime;
+                    
+                    // Haptic feedback for planet selection
+                    triggerHaptic('medium');
+                } else {
+                    clientX = event.clientX;
+                    clientY = event.clientY;
+                    tapCount = 2; // Desktop clicks are treated as double-tap for consistency
+                }
+                
+                mouse.x = (clientX / window.innerWidth) * 2 - 1;
+                mouse.y = -(clientY / window.innerHeight) * 2 + 1;
+                
+                raycaster.setFromCamera(mouse, camera);
+                const intersects = raycaster.intersectObjects([sun, ...planets, ...moons]);
+                
+                if (intersects.length > 0) {
+                    const clickedObject = intersects[0].object;
+                    const intersectionPoint = intersects[0].point;
+                    
+                    // Enhanced haptic feedback based on object type
+                    if (isMobileDevice()) {
+                        if (clickedObject === sun) {
+                            triggerHaptic('heavy'); // Sun gets strong feedback
+                        } else if (planets.includes(clickedObject)) {
+                            triggerHaptic('medium'); // Planets get medium feedback
+                        } else if (moons.includes(clickedObject)) {
+                            triggerHaptic('light'); // Moons get light feedback
+                        }
+                    }
+                    
+                    // In explore mode, clicking on sun exits explore mode
+                    if (explorePlanetsMode && clickedObject === sun) {
+                        deactivateExplorePlanetsMode();
+                        triggerHaptic('success'); // Success feedback for exiting
+                        return; // Don't show planet info when exiting
+                    }
+                    
+                    // In explore mode, clicking on planets just shows info (doesn't exit)
+                    if (explorePlanetsMode && planets.includes(clickedObject)) {
+                        showPlanetInfo(clickedObject.userData);
+                        return;
+                    }
+                    
+                    // Activate Explore Planets mode when clicking on a planet (center area)
+                    if (planets.includes(clickedObject) && !explorePlanetsMode) {
+                        activateExplorePlanetsMode(clickedObject);
+                    }
+                    
+                    // Activate Explore Planets mode when clicking on the sun (only if not in explore mode)
+                    if (clickedObject === sun && !explorePlanetsMode) {
+                        activateExplorePlanetsMode(sun);
+                    }
+                    
+                    showPlanetInfo(clickedObject.userData);
+                } else {
+                    // Clicking on empty space while in explore mode does nothing
+                    // (Only sun click or Exit button can exit explore mode now)
+                }
+            }
+            
+            renderer.domElement.addEventListener('click', handleInteraction);
+            renderer.domElement.addEventListener('touchend', handleInteraction);
+        }
+
+        function showPlanetInfo(userData) {
+            const info = document.getElementById('planet-info');
+            const data = userData.data;
+            
+            document.getElementById('planet-name').textContent = data.name[currentLanguage];
+            document.getElementById('planet-distance').textContent = userData.planetKey === 'sun' ? 'N/A' : `${data.distance * 5.9} million km`;
+            document.getElementById('planet-diameter').textContent = data.diameter;
+            document.getElementById('planet-period').textContent = data.period;
+            document.getElementById('planet-description').textContent = data.description[currentLanguage];
+            
+            info.style.display = 'block';
+        }
+
+        function closePlanetInfo() {
+            document.getElementById('planet-info').style.display = 'none';
+        }
+
+        function animate() {
+            requestAnimationFrame(animate);
+            
+            if (isAnimating) {
+                // Rotate sun
+                sun.rotation.y += 0.005 * animationSpeed;
+                
+                // Move planets
+                planets.forEach(planet => {
+                    const userData = planet.userData;
+                    userData.angle += userData.speed * animationSpeed;
+                    
+                    if (currentViewMode === '3d') {
+                        planet.position.x = Math.cos(userData.angle) * userData.distance;
+                        planet.position.z = Math.sin(userData.angle) * userData.distance;
+                    } else {
+                        planet.position.x = Math.cos(userData.angle) * userData.distance;
+                        planet.position.z = 0;
+                    }
+                    
+                    planet.rotation.y += 0.01 * animationSpeed;
+                    
+                    // Update Saturn's rings
+                    scene.children.forEach(child => {
+                        if (child.userData.type === 'rings' && child.userData.parent === planet) {
+                            child.position.copy(planet.position);
+                        }
+                    });
+                });
+                
+                // Move moons around their planets
+                moons.forEach(moon => {
+                    if (!showMoons) return;
+                    
+                    const userData = moon.userData;
+                    userData.angle += userData.speed * animationSpeed;
+                    
+                    // Find parent planet position
+                    const parentPlanet = planets.find(p => p.userData.planetKey === userData.planetKey);
+                    if (parentPlanet) {
+                        const moonX = parentPlanet.position.x + Math.cos(userData.angle) * userData.distance;
+                        const moonZ = parentPlanet.position.z + Math.sin(userData.angle) * userData.distance;
+                        
+                        if (currentViewMode === '3d') {
+                            moon.position.set(moonX, 0, moonZ);
+                        } else {
+                            moon.position.set(moonX, 0, 0);
+                        }
+                    }
+                });
+                
+                // Move moon orbits with their parent planets
+                scene.children.forEach(child => {
+                    if (child.userData.type === 'orbit' && child.userData.isMoonOrbit) {
+                        const parentPlanet = planets.find(p => p.userData && p.userData.name && p.userData.name.en === child.userData.parent);
+                        if (parentPlanet) {
+                            child.position.copy(parentPlanet.position);
+                        }
+                    }
+                });
+                
+                // Move asteroids
+                asteroids.forEach(asteroid => {
+                    if (!showAsteroids) return;
+                    
+                    const userData = asteroid.userData;
+                    userData.angle += userData.speed * animationSpeed;
+                    
+                    if (currentViewMode === '3d') {
+                        asteroid.position.x = Math.cos(userData.angle) * userData.distance;
+                        asteroid.position.z = Math.sin(userData.angle) * userData.distance;
+                    } else {
+                        asteroid.position.x = Math.cos(userData.angle) * userData.distance;
+                        asteroid.position.z = 0;
+                    }
+                    
+                    asteroid.rotation.x += 0.02 * animationSpeed;
+                    asteroid.rotation.y += 0.01 * animationSpeed;
+                });
+            }
+            
+            // Update camera position based on observation center
+            updateCameraPosition();
+            
+            controls.update();
+            renderer.render(scene, camera);
+        }
+
+        // Control functions
+        function setLanguage(lang) {
+            currentLanguage = lang;
+            
+            // Update button states
+            document.getElementById('lang-en').classList.toggle('active', lang === 'en');
+            document.getElementById('lang-zh').classList.toggle('active', lang === 'zh');
+            
+            // Update all text elements
+            document.querySelectorAll('[data-en]').forEach(element => {
+                element.textContent = element.getAttribute(`data-${lang}`);
+            });
+            
+            // Update select options
+            const select = document.getElementById('observation-center');
+            Array.from(select.options).forEach(option => {
+                const planetKey = option.value;
+                if (planetData[planetKey]) {
+                    option.textContent = planetData[planetKey].name[lang];
+                }
+            });
+            
+            // Update follow button if needed
+            const followBtn = document.getElementById('follow-btn');
+            if (followMode) {
+                followBtn.textContent = lang === 'en' ? 'Stop Following' : '停止跟随';
+            } else {
+                followBtn.textContent = lang === 'en' ? 'Follow Planet' : '跟随行星';
+            }
+            
+            // Update toggle buttons
+            updateToggleButtonTexts();
+            
+            // Update zoom controls text
+            updateZoomControlTexts();
+            
+            // Update observation tooltip
+            updateObservationTooltip(observationCenter);
+        }
+
+        function setViewMode(mode) {
+            currentViewMode = mode;
+            
+            // Update button states
+            document.getElementById('mode-3d').classList.toggle('active', mode === '3d');
+            document.getElementById('mode-2d').classList.toggle('active', mode === '2d');
+            
+            // Reset camera position for 2D mode
+            if (mode === '2d') {
+                camera.position.set(0, 0, 150);
+                controls.reset();
+            }
+        }
+
+        function toggleAnimation() {
+            isAnimating = !isAnimating;
+            const button = document.getElementById('toggle-animation');
+            button.textContent = isAnimating ? 
+                (currentLanguage === 'en' ? 'Pause' : '暂停') : 
+                (currentLanguage === 'en' ? 'Play' : '播放');
+        }
+
+        function setAnimationSpeed(speed) {
+            animationSpeed = parseFloat(speed);
+            document.getElementById('speed-value').textContent = speed + 'x';
+        }
+
+        function resetView() {
+            controls.reset();
+            camera.position.set(0, 50, 100);
+        }
+
+        function toggleOrbits() {
+            showOrbits = !showOrbits;
+            const button = document.getElementById('toggle-orbits');
+            
+            // Haptic feedback for toggle action
+            triggerHaptic('medium');
+            
+            scene.children.forEach(child => {
+                if (child.userData.type === 'orbit') {
+                    child.visible = showOrbits;
+                }
+            });
+            
+            button.textContent = showOrbits ? 
+                (currentLanguage === 'en' ? 'Hide Orbits' : '隐藏轨道') : 
+                (currentLanguage === 'en' ? 'Show Orbits' : '显示轨道');
+        }
+
+        function toggleMoons() {
+            showMoons = !showMoons;
+            const button = document.getElementById('toggle-moons');
+            
+            // Haptic feedback for toggle action
+            triggerHaptic('medium');
+            
+            moons.forEach(moon => {
+                moon.visible = showMoons;
+            });
+            
+            button.textContent = showMoons ? 
+                (currentLanguage === 'en' ? 'Hide Moons' : '隐藏卫星') : 
+                (currentLanguage === 'en' ? 'Show Moons' : '显示卫星');
+        }
+
+        function toggleAsteroids() {
+            showAsteroids = !showAsteroids;
+            const button = document.getElementById('toggle-asteroids');
+            
+            // Haptic feedback for toggle action
+            triggerHaptic('medium');
+            
+            asteroids.forEach(asteroid => {
+                asteroid.visible = showAsteroids;
+            });
+            
+            button.textContent = showAsteroids ? 
+                (currentLanguage === 'en' ? 'Hide Asteroids' : '隐藏小行星') : 
+                (currentLanguage === 'en' ? 'Show Asteroids' : '显示小行星');
+        }
+
+        function toggleExplorePlanetsMode() {
+            explorePlanetsMode = !explorePlanetsMode;
+            const button = document.getElementById('explore-planets');
+            
+            // Haptic feedback for toggle action
+            triggerHaptic('medium');
+            
+            if (explorePlanetsMode) {
+                // If observing from sun, explore the sun; otherwise use selected planet or Earth as default
+                if (observationCenter === 'sun') {
+                    activateExplorePlanetsMode(sun);
+                } else {
+                    const defaultPlanet = selectedPlanetForExplore || planets.find(p => p.userData && p.userData.name && p.userData.name.en === 'Earth');
+                    activateExplorePlanetsMode(defaultPlanet);
+                }
+            } else {
+                deactivateExplorePlanetsMode();
+            }
+            
+            button.textContent = explorePlanetsMode ? 
+                (currentLanguage === 'en' ? 'Exit Explore' : '退出探索') : 
+                (currentLanguage === 'en' ? 'Explore Planets' : '探索行星');
+        }
+
+        function activateExplorePlanetsMode(selectedPlanet) {
+            explorePlanetsMode = true;
+            selectedPlanetForExplore = selectedPlanet;
+            
+            if (!selectedPlanet) return;
+            
+            const selectedPlanetName = selectedPlanet.userData && selectedPlanet.userData.name && selectedPlanet.userData.name.en;
+            const isExploringFromSun = selectedPlanet === sun;
+            
+            // Hide all objects first
+            scene.children.forEach(child => {
+                if (child.userData.type === 'asteroid') {
+                    child.visible = false;
+                } else if (child === sun) {
+                    child.visible = true; // Always show the sun in explore mode
+                } else if (child.userData.type === 'orbit') {
+                    child.visible = false; // Hide all orbits initially
+                } else if (child.userData.type === 'rings') {
+                    child.visible = false; // Hide all rings initially
+                }
+            });
+            
+            if (isExploringFromSun) {
+                // When exploring from the sun, show all planets orbiting around it
+                planets.forEach(planet => {
+                    planet.visible = true;
+                });
+                
+                // Show all planet orbits when exploring from sun
+                scene.children.forEach(child => {
+                    if (child.userData.type === 'orbit' && !child.userData.isMoonOrbit) {
+                        child.visible = true;
+                    }
+                });
+                
+                // Show all moons
+                moons.forEach(moon => {
+                    moon.visible = showMoons;
+                });
+                
+                // Center camera on the sun with zoom
+                const sunZoomDistance = baseExploreDistance * 3 / exploreZoomLevel;
+                camera.position.set(0, sunZoomDistance, sunZoomDistance * 2);
+                controls.target.set(0, 0, 0);
+                controls.update();
+            } else {
+                // Hide all planets except the selected one
+                planets.forEach(planet => {
+                    planet.visible = (planet === selectedPlanet);
+                });
+                
+                // Show only moons of the selected planet and their orbits
+                moons.forEach(moon => {
+                    const moonParent = moon.userData.parent;
+                    moon.visible = (moonParent === selectedPlanetName);
+                });
+                
+                // Show only the orbit of the selected planet and its moons
+                scene.children.forEach(child => {
+                    if (child.userData.type === 'orbit') {
+                        const orbitPlanet = child.userData.planet;
+                        const orbitParent = child.userData.parent;
+                        
+                        // Show orbit if it belongs to selected planet or its moons
+                        child.visible = (orbitPlanet === selectedPlanetName || orbitParent === selectedPlanetName);
+                    }
+                });
+                
+                // Show Saturn's rings only when exploring Saturn
+                scene.children.forEach(child => {
+                    if (child.userData.type === 'rings') {
+                        const ringParent = child.userData.parent;
+                        child.visible = (ringParent === selectedPlanet && selectedPlanetName === 'Saturn');
+                    }
+                });
+                
+                // Center camera on the selected planet with zoom
+                const planetPos = selectedPlanet.position;
+                const zoomDistance = baseExploreDistance / exploreZoomLevel;
+                const planetRadius = selectedPlanet.userData.data.radius;
+                const minDistance = planetRadius * 3; // Minimum distance to avoid clipping
+                const actualDistance = Math.max(zoomDistance, minDistance);
+                
+                camera.position.set(
+                    planetPos.x, 
+                    planetPos.y + actualDistance * 0.7, 
+                    planetPos.z + actualDistance
+                );
+                controls.target.set(planetPos.x, planetPos.y, planetPos.z);
+                controls.update();
+            }
+            
+            // Hide asteroids
+            asteroids.forEach(asteroid => {
+                asteroid.visible = false;
+            });
+            
+            // Show zoom controls and update button text
+            document.getElementById('explore-zoom-controls').style.display = 'block';
+            const button = document.getElementById('explore-planets');
+            button.textContent = currentLanguage === 'en' ? 'Exit Explore' : '退出探索';
+        }
+
+        function deactivateExplorePlanetsMode() {
+            explorePlanetsMode = false;
+            selectedPlanetForExplore = null;
+            
+            // Restore all planets visibility
+            planets.forEach(planet => {
+                planet.visible = true;
+            });
+            
+            // Restore all moons visibility based on current settings
+            moons.forEach(moon => {
+                moon.visible = showMoons;
+            });
+            
+            // Restore normal visibility based on current settings
+            scene.children.forEach(child => {
+                if (child.userData.type === 'asteroid') {
+                    child.visible = showAsteroids;
+                } else if (child === sun) {
+                    child.visible = true;
+                } else if (child.userData.type === 'orbit') {
+                    child.visible = showOrbits;
+                } else if (child.userData.type === 'rings') {
+                    child.visible = true; // Always show Saturn's rings in normal mode
+                }
+            });
+            
+            // Restore asteroids visibility
+            asteroids.forEach(asteroid => {
+                asteroid.visible = showAsteroids;
+            });
+            
+            // Reset camera to default position
+            camera.position.set(0, 20, 50);
+            controls.target.set(0, 0, 0);
+            controls.update();
+            
+            // Hide zoom controls and update button text
+            document.getElementById('explore-zoom-controls').style.display = 'none';
+            exploreZoomLevel = 1; // Reset zoom level
+            document.getElementById('explore-zoom-slider').value = 1;
+            document.getElementById('explore-zoom-value').textContent = '1x';
+            
+            const button = document.getElementById('explore-planets');
+            button.textContent = currentLanguage === 'en' ? 'Explore Planets' : '探索行星';
+        }
+
+        function toggleHaptic() {
+            hapticEnabled = !hapticEnabled;
+            const button = document.getElementById('toggle-haptic');
+            
+            // Test haptic feedback when enabling
+            if (hapticEnabled) {
+                triggerHaptic('success');
+            }
+            
+            button.textContent = hapticEnabled ? 
+                (currentLanguage === 'en' ? 'Haptic: ON' : '触觉反馈: 开') : 
+                (currentLanguage === 'en' ? 'Haptic: OFF' : '触觉反馈: 关');
+            
+            button.classList.toggle('active', hapticEnabled);
+        }
+
+        function setExploreZoom(zoom) {
+            exploreZoomLevel = parseFloat(zoom);
+            document.getElementById('explore-zoom-value').textContent = zoom + 'x';
+            
+            // Update camera position if in explore mode
+            if (explorePlanetsMode && selectedPlanetForExplore) {
+                updateExploreCameraPosition();
+            }
+            
+            // Haptic feedback for zoom change on mobile
+            if (isMobileDevice()) {
+                triggerHaptic('light');
+            }
+        }
+
+        function resetExploreZoom() {
+            exploreZoomLevel = 1;
+            document.getElementById('explore-zoom-slider').value = 1;
+            document.getElementById('explore-zoom-value').textContent = '1x';
+            
+            // Update camera position if in explore mode
+            if (explorePlanetsMode && selectedPlanetForExplore) {
+                updateExploreCameraPosition();
+            }
+            
+            // Haptic feedback for reset
+            triggerHaptic('medium');
+        }
+
+        function zoomIn() {
+            const currentZoom = parseFloat(document.getElementById('explore-zoom-slider').value);
+            const newZoom = Math.min(currentZoom + 0.2, 5); // Increase by 0.2, max 5
+            document.getElementById('explore-zoom-slider').value = newZoom;
+            setExploreZoom(newZoom);
+            
+            // Enhanced haptic feedback for button press
+            triggerHaptic('medium');
+        }
+
+        function zoomOut() {
+            const currentZoom = parseFloat(document.getElementById('explore-zoom-slider').value);
+            const newZoom = Math.max(currentZoom - 0.2, 0.5); // Decrease by 0.2, min 0.5
+            document.getElementById('explore-zoom-slider').value = newZoom;
+            setExploreZoom(newZoom);
+            
+            // Enhanced haptic feedback for button press
+            triggerHaptic('medium');
+        }
+
+        function updateExploreCameraPosition() {
+            if (!explorePlanetsMode || !selectedPlanetForExplore) return;
+            
+            const isExploringFromSun = selectedPlanetForExplore === sun;
+            
+            if (isExploringFromSun) {
+                // Update sun camera position with zoom
+                const sunZoomDistance = baseExploreDistance * 3 / exploreZoomLevel;
+                camera.position.set(0, sunZoomDistance, sunZoomDistance * 2);
+                controls.target.set(0, 0, 0);
+            } else {
+                // Update planet camera position with zoom
+                const planetPos = selectedPlanetForExplore.position;
+                const zoomDistance = baseExploreDistance / exploreZoomLevel;
+                const planetRadius = selectedPlanetForExplore.userData.data.radius;
+                const minDistance = planetRadius * 3; // Minimum distance to avoid clipping
+                const actualDistance = Math.max(zoomDistance, minDistance);
+                
+                camera.position.set(
+                    planetPos.x, 
+                    planetPos.y + actualDistance * 0.7, 
+                    planetPos.z + actualDistance
+                );
+                controls.target.set(planetPos.x, planetPos.y, planetPos.z);
+            }
+            
+            controls.update();
+        }
+
+        function setObservationCenter(centerKey) {
+            observationCenter = centerKey;
+            followMode = false;
+            
+            // Haptic feedback for observation center change
+            triggerHaptic('success');
+            
+            // Update follow button text
+            const followBtn = document.getElementById('follow-btn');
+            followBtn.textContent = currentLanguage === 'en' ? 'Follow Planet' : '跟随行星';
+            followBtn.classList.remove('active');
+            
+            // Reset camera controls
+            controls.enabled = true;
+            
+            // Update educational tooltip
+            updateObservationTooltip(centerKey);
+            
+            // Move camera to new observation center
+            const centerObject = getCenterObject(centerKey);
+            if (centerObject) {
+                const targetPos = centerObject.position.clone();
+                targetPos.add(new THREE.Vector3(cameraOffset.x, cameraOffset.y, cameraOffset.z));
+                
+                // Smooth camera transition
+                animateCameraTo(targetPos, centerObject.position);
+            }
+        }
+
+        function followPlanet() {
+            followMode = !followMode;
+            const followBtn = document.getElementById('follow-btn');
+            
+            if (followMode) {
+                followBtn.textContent = currentLanguage === 'en' ? 'Stop Following' : '停止跟随';
+                followBtn.classList.add('active');
+                controls.enabled = false; // Disable manual camera control
+            } else {
+                followBtn.textContent = currentLanguage === 'en' ? 'Follow Planet' : '跟随行星';
+                followBtn.classList.remove('active');
+                controls.enabled = true; // Enable manual camera control
+            }
+        }
+
+        function getCenterObject(centerKey) {
+            if (centerKey === 'sun') {
+                return sun;
+            }
+            return planets.find(planet => planet.userData.planetKey === centerKey);
+        }
+
+        function updateCameraPosition() {
+            if (!followMode) return;
+            
+            const centerObject = getCenterObject(observationCenter);
+            if (centerObject) {
+                const targetPos = centerObject.position.clone();
+                targetPos.add(new THREE.Vector3(cameraOffset.x, cameraOffset.y, cameraOffset.z));
+                
+                camera.position.lerp(targetPos, 0.05);
+                camera.lookAt(centerObject.position);
+            }
+        }
+
+        function animateCameraTo(targetPosition, lookAtPosition) {
+            const startPos = camera.position.clone();
+            const startTime = Date.now();
+            const duration = 2000; // 2 seconds
+            
+            function animate() {
+                const elapsed = Date.now() - startTime;
+                const progress = Math.min(elapsed / duration, 1);
+                
+                // Smooth easing function
+                const easeProgress = 1 - Math.pow(1 - progress, 3);
+                
+                camera.position.lerpVectors(startPos, targetPosition, easeProgress);
+                camera.lookAt(lookAtPosition);
+                
+                if (progress < 1) {
+                    requestAnimationFrame(animate);
+                } else {
+                    // Update controls target
+                    controls.target.copy(lookAtPosition);
+                    controls.update();
+                }
+            }
+            
+            animate();
+        }
+
+        function updateToggleButtonTexts() {
+            const orbitBtn = document.getElementById('toggle-orbits');
+            orbitBtn.textContent = showOrbits ? 
+                (currentLanguage === 'en' ? 'Hide Orbits' : '隐藏轨道') : 
+                (currentLanguage === 'en' ? 'Show Orbits' : '显示轨道');
+                
+            const moonBtn = document.getElementById('toggle-moons');
+            moonBtn.textContent = showMoons ? 
+                (currentLanguage === 'en' ? 'Hide Moons' : '隐藏卫星') : 
+                (currentLanguage === 'en' ? 'Show Moons' : '显示卫星');
+                
+            const asteroidBtn = document.getElementById('toggle-asteroids');
+            asteroidBtn.textContent = showAsteroids ? 
+                (currentLanguage === 'en' ? 'Hide Asteroids' : '隐藏小行星') : 
+                (currentLanguage === 'en' ? 'Show Asteroids' : '显示小行星');
+            
+            const exploreBtn = document.getElementById('explore-planets');
+            exploreBtn.textContent = explorePlanetsMode ? 
+                (currentLanguage === 'en' ? 'Exit Explore' : '退出探索') : 
+                (currentLanguage === 'en' ? 'Explore Planets' : '探索行星');
+        }
+
+        function updateZoomControlTexts() {
+            // Update zoom control labels for language changes
+            const zoomControls = document.getElementById('explore-zoom-controls');
+            if (zoomControls) {
+                const label = zoomControls.querySelector('label');
+                if (label) {
+                    label.textContent = currentLanguage === 'en' ? 'Explore Zoom' : '探索缩放';
+                }
+                
+                // Update all buttons with data attributes
+                const buttons = zoomControls.querySelectorAll('button[data-en]');
+                buttons.forEach(button => {
+                    const enText = button.getAttribute('data-en');
+                    const zhText = button.getAttribute('data-zh');
+                    if (enText && zhText) {
+                        button.textContent = currentLanguage === 'en' ? enText : zhText;
+                    }
+                });
+            }
+        }
+
+        function updateObservationTooltip(centerKey) {
+            if (!showTooltip) return;
+            
+            const tooltip = observationTooltips[centerKey];
+            if (tooltip) {
+                document.getElementById('tooltip-title').textContent = tooltip.title[currentLanguage];
+                document.getElementById('tooltip-content').textContent = tooltip.content[currentLanguage];
+            }
+        }
+
+        function toggleTooltip() {
+            showTooltip = !showTooltip;
+            const tooltipElement = document.getElementById('observation-tooltip');
+            const toggleButton = document.querySelector('.tooltip-toggle');
+            
+            if (showTooltip) {
+                tooltipElement.style.display = 'block';
+                toggleButton.textContent = '?';
+                toggleButton.title = 'Hide Educational Tips';
+                updateObservationTooltip(observationCenter);
+            } else {
+                tooltipElement.style.display = 'none';
+                toggleButton.textContent = '!';
+                toggleButton.title = 'Show Educational Tips';
+            }
+        }
+
+        // Enhanced mobile device detection
+        function isMobileDevice() {
+            return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || 
+                   (window.innerWidth <= 768) ||
+                   ('ontouchstart' in window) ||
+                   (navigator.maxTouchPoints > 0);
+        }
+
+        // Tablet device detection
+        function isTabletDevice() {
+            return (window.innerWidth >= 769 && window.innerWidth <= 1024) ||
+                   /iPad/i.test(navigator.userAgent) ||
+                   (navigator.maxTouchPoints > 1 && window.innerWidth >= 769);
+        }
+
+        // Get device type for optimized settings
+        function getDeviceType() {
+            if (window.innerWidth <= 480) return 'mobile-small';
+            if (window.innerWidth <= 768) return 'mobile';
+            if (window.innerWidth <= 1024) return 'tablet';
+            return 'desktop';
+        }
+
+        // Initialize controls toggle button state
+        function initializeControlsToggle() {
+            const controls = document.getElementById('controls');
+            const toggle = document.querySelector('.mobile-controls-toggle');
+            const deviceType = getDeviceType();
+            
+            // Set initial state based on device type
+            if (deviceType === 'mobile-small' || deviceType === 'mobile') {
+                // Mobile: controls hidden by default
+                toggle.innerHTML = '☰';
+                toggle.style.background = '#4CAF50';
+                toggle.title = 'Show Controls';
+            } else {
+                // Tablet/Desktop: controls visible by default
+                toggle.innerHTML = '✕';
+                toggle.style.background = '#f44336';
+                toggle.title = 'Hide Controls';
+            }
+        }
+
+        // Universal controls toggle for all devices
+        function toggleMobileControls() {
+            const controls = document.getElementById('controls');
+            const toggle = document.querySelector('.mobile-controls-toggle');
+            const deviceType = getDeviceType();
+            
+            // Handle mobile devices (original behavior)
+            if (deviceType === 'mobile-small' || deviceType === 'mobile') {
+                controls.classList.toggle('mobile-open');
+                
+                if (controls.classList.contains('mobile-open')) {
+                    toggle.innerHTML = '✕';
+                    toggle.style.background = '#f44336';
+                    toggle.title = 'Hide Controls';
+                } else {
+                    toggle.innerHTML = '☰';
+                    toggle.style.background = '#4CAF50';
+                    toggle.title = 'Show Controls';
+                }
+            } 
+            // Handle tablet and desktop devices (new behavior)
+            else {
+                controls.classList.toggle('desktop-hidden');
+                
+                if (controls.classList.contains('desktop-hidden')) {
+                    toggle.innerHTML = '☰';
+                    toggle.style.background = '#4CAF50';
+                    toggle.title = 'Show Controls';
+                } else {
+                    toggle.innerHTML = '✕';
+                    toggle.style.background = '#f44336';
+                    toggle.title = 'Hide Controls';
+                }
+            }
+            
+            // Haptic feedback for all devices
+            triggerHaptic('medium');
+        }
+
+        // Handle window resize
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            
+            // Adjust layout for all devices
+            if (isMobileDevice()) {
+                adjustMobileLayout();
+            }
+            
+            // Reinitialize controls toggle when device type changes
+            initializeControlsToggle();
+        });
+
+        // Adjust mobile layout
+        function adjustMobileLayout() {
+            const tooltip = document.getElementById('observation-tooltip');
+            const planetInfo = document.getElementById('planet-info');
+            
+            // Ensure mobile-friendly positioning
+            if (window.innerHeight < 600) {
+                tooltip.style.maxHeight = '80px';
+            } else {
+                tooltip.style.maxHeight = '120px';
+            }
+        }
+
+        // Haptic feedback functions
+        function triggerHaptic(type = 'light') {
+            if (!hapticEnabled || !isMobileDevice()) return;
+            
+            try {
+                if (navigator.vibrate) {
+                    // Vibration patterns for different feedback types
+                    const patterns = {
+                        light: [10],           // Quick tap
+                        medium: [20],          // Button press
+                        heavy: [50],           // Important action
+                        success: [10, 50, 10], // Success pattern
+                        error: [100, 50, 100], // Error pattern
+                        selection: [5, 10, 5]  // Selection feedback
+                    };
+                    
+                    navigator.vibrate(patterns[type] || patterns.light);
+                }
+                
+                // iOS Haptic Feedback (if available)
+                if (window.DeviceMotionEvent && typeof DeviceMotionEvent.requestPermission === 'function') {
+                    // iOS 13+ haptic feedback
+                    if (window.navigator.vibrate) {
+                        window.navigator.vibrate(type === 'heavy' ? [50] : [10]);
+                    }
+                }
+            } catch (error) {
+                console.log('Haptic feedback not supported:', error);
+            }
+        }
+
+        // Enhanced button click with haptic feedback
+        function hapticButtonClick(element, callback, feedbackType = 'medium') {
+            triggerHaptic(feedbackType);
+            
+            // Visual feedback
+            element.style.transform = 'scale(0.95)';
+            setTimeout(() => {
+                element.style.transform = 'scale(1)';
+            }, 100);
+            
+            // Execute callback
+            if (callback) callback();
+        }
+
+        // Touch event optimizations
+        function setupTouchEvents() {
+            if (!isMobileDevice()) return;
+            
+            // Add haptic feedback to all buttons
+            document.querySelectorAll('button').forEach(button => {
+                button.addEventListener('touchstart', (e) => {
+                    triggerHaptic('light');
+                }, { passive: true });
+            });
+            
+            // Add haptic feedback to select elements
+            document.querySelectorAll('select').forEach(select => {
+                select.addEventListener('change', (e) => {
+                    triggerHaptic('selection');
+                }, { passive: true });
+            });
+            
+            // Add haptic feedback to range sliders
+            document.querySelectorAll('input[type="range"]').forEach(slider => {
+                let lastValue = slider.value;
+                slider.addEventListener('input', (e) => {
+                    // Only trigger haptic on significant value changes
+                    if (Math.abs(e.target.value - lastValue) > 0.2) {
+                        triggerHaptic('light');
+                        lastValue = e.target.value;
+                    }
+                }, { passive: true });
+            });
+            
+            // Prevent default touch behaviors that might interfere
+            document.addEventListener('touchstart', (e) => {
+                if (e.target.closest('#controls') || e.target.closest('#planet-info')) {
+                    return; // Allow normal touch behavior for UI elements
+                }
+            }, { passive: true });
+            
+            // Optimize touch performance
+            renderer.domElement.addEventListener('touchstart', (e) => {
+                e.preventDefault();
+            }, { passive: false });
+            
+            renderer.domElement.addEventListener('touchmove', (e) => {
+                e.preventDefault();
+            }, { passive: false });
+        }
+
+        // Keyboard shortcuts for quick planet switching and controls
+        window.addEventListener('keydown', (event) => {
+            const keyMap = {
+                '1': 'sun',
+                '2': 'mercury', 
+                '3': 'venus',
+                '4': 'earth',
+                '5': 'mars',
+                '6': 'jupiter',
+                '7': 'saturn',
+                '8': 'uranus',
+                '9': 'neptune'
+            };
+            
+            if (keyMap[event.key]) {
+                document.getElementById('observation-center').value = keyMap[event.key];
+                setObservationCenter(keyMap[event.key]);
+            }
+            
+            // Space bar to toggle follow mode
+            if (event.code === 'Space') {
+                event.preventDefault();
+                followPlanet();
+            }
+            
+            // 'C' key to toggle controls visibility
+            if (event.key.toLowerCase() === 'c' && !event.ctrlKey && !event.altKey) {
+                event.preventDefault();
+                toggleMobileControls();
+            }
+            
+            // 'H' key to toggle controls visibility (alternative)
+            if (event.key.toLowerCase() === 'h' && !event.ctrlKey && !event.altKey) {
+                event.preventDefault();
+                toggleMobileControls();
+            }
+        });
+
+        // Initialize when page loads
+        window.addEventListener('load', function() {
+            try {
+                init();
+            } catch (error) {
+                const loadingDiv = document.getElementById('loading');
+                if (loadingDiv) {
+                    loadingDiv.innerHTML = '<div class="spinner"></div><p>Error loading solar system: ' + (error.message || 'Unknown error') + '</p>';
+                }
+            }
+        });
+    </script>
+</body>
+</html>
