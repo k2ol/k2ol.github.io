@@ -1,0 +1,505 @@
+<!doctype html>
+<html lang="zh-Hant">
+	<head>
+		<meta charset="utf-8" />
+		<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+		<link rel="icon" href="/favicon.ico" />
+		<meta name="viewport" content="width=device-width" />
+		<title>量角器</title>
+		<script>
+			(() => {
+				const saved = localStorage.getItem('t-theme');
+				const theme = saved || (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+				document.documentElement.dataset.theme = theme;
+			})();
+		</script>
+		<style>
+			:root {
+				--bg: #ffffff;
+				--fg: #1a1a1a;
+				--muted: #8a8a8a;
+				--btn-bg: rgba(0, 0, 0, 0.06);
+				--btn-hover: rgba(0, 0, 0, 0.12);
+				--accent: #6366f1;
+				--card: rgba(0, 0, 0, 0.04);
+				--ok: #22a55b;
+			}
+			html[data-theme='dark'] {
+				--bg: #111111;
+				--fg: #f5f5f5;
+				--muted: #9a9a9a;
+				--btn-bg: rgba(255, 255, 255, 0.08);
+				--btn-hover: rgba(255, 255, 255, 0.16);
+				--accent: #8b85ff;
+				--card: rgba(255, 255, 255, 0.06);
+				--ok: #4ade80;
+			}
+			body {
+				margin: 0;
+				min-height: 100vh;
+				background: var(--bg);
+				color: var(--fg);
+				font-family: system-ui, -apple-system, 'Segoe UI', 'Noto Sans TC', sans-serif;
+				display: flex;
+				flex-direction: column;
+				align-items: center;
+				gap: 1rem;
+				padding: 2.5rem 1rem 2rem;
+				box-sizing: border-box;
+				transition: background 0.3s, color 0.3s;
+				user-select: none;
+			}
+			h1 {
+				margin: 0;
+				font-size: 1.4rem;
+				color: var(--muted);
+				font-weight: 600;
+			}
+			#links {
+				position: fixed;
+				top: 1rem;
+				right: 1rem;
+				display: flex;
+				gap: 0.7rem;
+			}
+			#links a {
+				color: var(--muted);
+				text-decoration: none;
+				font-size: 1.2rem;
+			}
+			#links a:hover {
+				color: var(--fg);
+			}
+			.row {
+				display: flex;
+				gap: 0.8rem;
+				align-items: center;
+				flex-wrap: wrap;
+				justify-content: center;
+			}
+			.row > * {
+				font: inherit;
+				padding: 0.5rem 1.2rem;
+				border-radius: 999px;
+				border: none;
+				background: var(--btn-bg);
+				color: inherit;
+				cursor: pointer;
+			}
+			.row > *:hover {
+				background: var(--btn-hover);
+			}
+			.row .mode-on {
+				background: var(--accent);
+				color: #fff;
+				font-weight: 700;
+			}
+			.panel {
+				display: none;
+				flex-direction: column;
+				align-items: center;
+				gap: 1rem;
+				width: 100%;
+			}
+			.panel.on {
+				display: flex;
+			}
+			.big {
+				font-size: min(18vw, 5.5rem);
+				font-weight: 800;
+				line-height: 1;
+				font-variant-numeric: tabular-nums;
+			}
+			.big small {
+				font-size: 0.4em;
+				color: var(--muted);
+				font-weight: 600;
+			}
+			#status {
+				color: var(--muted);
+				font-size: 0.95rem;
+				text-align: center;
+				min-height: 1.4rem;
+			}
+			#gauge {
+				width: min(80vw, 300px);
+			}
+			#cam-wrap {
+				position: relative;
+				width: min(94vw, 40rem);
+				aspect-ratio: 4 / 3;
+				background: #000;
+				border-radius: 0.8rem;
+				overflow: hidden;
+			}
+			#cam {
+				position: absolute;
+				inset: 0;
+				width: 100%;
+				height: 100%;
+				object-fit: cover;
+			}
+			#overlay {
+				position: absolute;
+				inset: 0;
+				width: 100%;
+				height: 100%;
+				cursor: crosshair;
+			}
+			#cam-read {
+				min-height: 2.2rem;
+				font-size: 1.25rem;
+				font-weight: 700;
+				text-align: center;
+			}
+			#cam-read .ang {
+				color: var(--accent);
+			}
+			.hint {
+				color: var(--muted);
+				font-size: 0.85rem;
+				margin: 0;
+				text-align: center;
+			}
+			.zero-btn {
+				font: inherit;
+				padding: 0.5rem 1.2rem;
+				border-radius: 999px;
+				border: none;
+				background: var(--btn-bg);
+				color: inherit;
+				cursor: pointer;
+			}
+			.zero-btn:hover {
+				background: var(--btn-hover);
+			}
+		</style>
+	</head>
+	<body>
+		<div id="links">
+			<a href="/t/index.html" title="工具箱">🧰</a>
+			<a href="/" title="回首頁">🏠</a>
+		</div>
+		<h1>📐 量角器</h1>
+		<div class="row">
+			<button id="tab-gyro" class="mode-on">📱 陀螺儀測仰角</button>
+			<button id="tab-cam">📷 相機測角度</button>
+		</div>
+
+		<div id="panel-gyro" class="panel on">
+			<canvas id="gauge" width="600" height="360"></canvas>
+			<div class="big"><span id="gyro-val">--</span><small>°</small></div>
+			<div id="status">將手機長邊貼齊待測斜面（螢幕朝自己），平放為 0°</div>
+			<div class="row">
+				<button class="zero-btn" id="enable-btn">⚡ 啟用感測器</button>
+				<button class="zero-btn" id="zero-btn">⊙ 歸零</button>
+			</div>
+			<p class="hint">需要裝置支援動作感測器；iPhone 需先授權「動作與方向存取權」。</p>
+		</div>
+
+		<div id="panel-cam" class="panel">
+			<div id="cam-wrap">
+				<video id="cam" playsinline muted></video>
+				<canvas id="overlay"></canvas>
+			</div>
+			<div id="cam-read">點第一下：端點 A</div>
+			<div class="row">
+				<button class="zero-btn" id="cam-start-btn">📷 開啟相機</button>
+				<button class="zero-btn" id="cam-clear-btn">↺ 重新測量</button>
+			</div>
+			<p class="hint">依序點：端點 A → 頂點 O → 端點 B，即可量出 ∠AOB；再點一下重新開始。畫面中央有量角刻度輔助。</p>
+		</div>
+
+		<script>
+			// ---------- 分頁切換 ----------
+			const tabGyro = document.getElementById('tab-gyro');
+			const tabCam = document.getElementById('tab-cam');
+			const panelGyro = document.getElementById('panel-gyro');
+			const panelCam = document.getElementById('panel-cam');
+			function showPanel(which) {
+				panelGyro.classList.toggle('on', which === 'gyro');
+				panelCam.classList.toggle('on', which === 'cam');
+				tabGyro.className = which === 'gyro' ? 'mode-on' : '';
+				tabCam.className = which === 'cam' ? 'mode-on' : '';
+				if (which !== 'cam') stopCam();
+			}
+			tabGyro.addEventListener('click', () => showPanel('gyro'));
+			tabCam.addEventListener('click', () => showPanel('cam'));
+
+			// ---------- 陀螺儀測仰角 ----------
+			const gauge = document.getElementById('gauge');
+			const gctx = gauge.getContext('2d');
+			const gyroVal = document.getElementById('gyro-val');
+			const gyroStatus = document.getElementById('status');
+			let zeroOffset = 0;
+			let curElev = null;
+
+			function drawGauge(elev) {
+				const W = gauge.width;
+				const H = gauge.height;
+				const cx = W / 2;
+				const cy = H - 30;
+				const R = Math.min(W / 2 - 30, H - 60);
+				elev = Math.max(-90, Math.min(90, elev ?? 0));
+				gctx.clearRect(0, 0, W, H);
+				const fg = getComputedStyle(document.documentElement).getPropertyValue('--fg').trim() || '#1a1a1a';
+				const accent = getComputedStyle(document.documentElement).getPropertyValue('--accent').trim() || '#6366f1';
+				// 弧線與刻度：-90°～90°
+				gctx.strokeStyle = fg;
+				gctx.fillStyle = fg;
+				gctx.lineWidth = 2;
+				gctx.beginPath();
+				gctx.arc(cx, cy, R, Math.PI, 2 * Math.PI);
+				gctx.stroke();
+				gctx.font = '16px system-ui, sans-serif';
+				gctx.textAlign = 'center';
+				gctx.textBaseline = 'middle';
+				for (let a = -90; a <= 90; a += 10) {
+					const rad = Math.PI + (a + 90) / 180 * Math.PI;
+					const major = a % 30 === 0;
+					const r1 = R - (major ? 14 : 8);
+					gctx.beginPath();
+					gctx.moveTo(cx + Math.cos(rad) * r1, cy + Math.sin(rad) * r1);
+					gctx.lineTo(cx + Math.cos(rad) * R, cy + Math.sin(rad) * R);
+					gctx.stroke();
+					if (major) {
+						gctx.fillText(a + '°', cx + Math.cos(rad) * (R - 30), cy + Math.sin(rad) * (R - 30));
+					}
+				}
+				// 水平基準線
+				gctx.strokeStyle = 'rgba(128,128,128,0.5)';
+				gctx.setLineDash([5, 5]);
+				gctx.beginPath();
+				gctx.moveTo(cx - R, cy);
+				gctx.lineTo(cx + R, cy);
+				gctx.stroke();
+				gctx.setLineDash([]);
+				// 指針
+				if (elev !== null) {
+					const rad = Math.PI + (elev + 90) / 180 * Math.PI;
+					gctx.strokeStyle = accent;
+					gctx.lineWidth = 4;
+					gctx.beginPath();
+					gctx.moveTo(cx, cy);
+					gctx.lineTo(cx + Math.cos(rad) * (R - 6), cy + Math.sin(rad) * (R - 6));
+					gctx.stroke();
+					gctx.beginPath();
+					gctx.arc(cx, cy, 7, 0, Math.PI * 2);
+					gctx.fillStyle = accent;
+					gctx.fill();
+				}
+				gctx.fillStyle = fg;
+				gctx.fillText('0°（水平）', cx, cy - 14);
+			}
+
+			function normElev(beta) {
+				// beta：0 平放、90 立正、超出範圍折返，取仰角 0～90
+				let b = ((beta % 360) + 360) % 360;
+				if (b <= 90) return b;
+				if (b <= 180) return 180 - b;
+				if (b <= 270) return b - 180;
+				return 360 - b;
+			}
+
+			function onOrient(e) {
+				if (e.beta === null && e.gamma === null) return;
+				const elev = normElev(e.beta ?? 0);
+				curElev = elev;
+				const shown = Math.round((elev - zeroOffset) * 10) / 10;
+				gyroVal.textContent = shown;
+				drawGauge(elev - zeroOffset);
+			}
+
+			async function enableGyro() {
+				try {
+					if (typeof DeviceOrientationEvent === 'undefined' || !window.DeviceOrientationEvent) {
+						gyroStatus.textContent = '此裝置/瀏覽器不支援動作感測器';
+						return;
+					}
+					if (DeviceOrientationEvent.requestPermission) {
+						// iOS：必須由使用者手勢觸發授權
+						const res = await DeviceOrientationEvent.requestPermission();
+						if (res !== 'granted') {
+							gyroStatus.textContent = '未授權動作感測器（請再按一次「啟用感測器」並允許）';
+							return;
+						}
+					}
+					window.addEventListener('deviceorientation', onOrient);
+					gyroStatus.textContent = '感測中…';
+				} catch (err) {
+					gyroStatus.textContent = '無法啟用感測器：' + err.message + '（iPhone 請按「啟用感測器」授權）';
+				}
+			}
+
+			document.getElementById('enable-btn').addEventListener('click', enableGyro);
+
+			document.getElementById('zero-btn').addEventListener('click', () => {
+				if (curElev === null) return;
+				zeroOffset = curElev;
+				gyroVal.textContent = 0;
+				drawGauge(0);
+			});
+
+			// 桌面沒有陀螺儀時的提示（裝置有支援則在授權後自動覆蓋）
+			drawGauge(null);
+
+			// ---------- 相機測角度 ----------
+			const cam = document.getElementById('cam');
+			const overlay = document.getElementById('overlay');
+			const octx = overlay.getContext('2d');
+			const camRead = document.getElementById('cam-read');
+			let stream = null;
+			let pts = []; // [A, O, B]
+			let lastAngle = null;
+
+			function angleBetween(a, o, b) {
+				const v1 = { x: a.x - o.x, y: a.y - o.y };
+				const v2 = { x: b.x - o.x, y: b.y - o.y };
+				const m1 = Math.hypot(v1.x, v1.y);
+				const m2 = Math.hypot(v2.x, v2.y);
+				if (!m1 || !m2) return null;
+				const dot = v1.x * v2.x + v1.y * v2.y;
+				return (Math.acos(Math.min(1, Math.max(-1, dot / (m1 * m2)))) * 180) / Math.PI;
+			}
+
+			function resizeOverlay() {
+				overlay.width = overlay.clientWidth;
+				overlay.height = overlay.clientHeight;
+				drawOverlay();
+			}
+			window.addEventListener('resize', resizeOverlay);
+
+			function drawOverlay() {
+				const W = overlay.width;
+				const H = overlay.height;
+				if (!W || !H) return;
+				octx.clearRect(0, 0, W, H);
+				const cx = W / 2;
+				const cy = H / 2;
+				const R = Math.min(W, H) * 0.38;
+				// 中央量角刻度環
+				octx.strokeStyle = 'rgba(255,255,255,0.75)';
+				octx.lineWidth = 1.5;
+				octx.beginPath();
+				octx.arc(cx, cy, R, 0, Math.PI * 2);
+				octx.stroke();
+				octx.font = '12px system-ui, sans-serif';
+				octx.textAlign = 'center';
+				octx.textBaseline = 'middle';
+				for (let a = 0; a < 360; a += 10) {
+					const rad = (a * Math.PI) / 180;
+					const major = a % 30 === 0;
+					const r1 = R - (major ? 12 : 6);
+					octx.beginPath();
+					octx.moveTo(cx + Math.cos(rad) * r1, cy + Math.sin(rad) * r1);
+					octx.lineTo(cx + Math.cos(rad) * R, cy + Math.sin(rad) * R);
+					octx.stroke();
+					if (a % 90 === 0) {
+						octx.fillStyle = 'rgba(255,255,255,0.9)';
+						octx.fillText(a + '°', cx + Math.cos(rad) * (R + 16), cy + Math.sin(rad) * (R + 16));
+					}
+				}
+				octx.beginPath();
+				octx.arc(cx, cy, 3, 0, Math.PI * 2);
+				octx.fillStyle = 'rgba(255,255,255,0.9)';
+				octx.fill();
+				// 測量線
+				if (pts.length >= 2) {
+					octx.strokeStyle = '#ffd54f';
+					octx.lineWidth = 2.5;
+					octx.beginPath();
+					octx.moveTo(pts[0].x, pts[0].y);
+					octx.lineTo(pts[1].x, pts[1].y);
+					octx.stroke();
+				}
+				if (pts.length >= 3) {
+					octx.strokeStyle = '#4fc3f7';
+					octx.beginPath();
+					octx.moveTo(pts[1].x, pts[1].y);
+					octx.lineTo(pts[2].x, pts[2].y);
+					octx.stroke();
+					// 角度弧
+					const ang1 = Math.atan2(pts[0].y - pts[1].y, pts[0].x - pts[1].x);
+					let ang2 = Math.atan2(pts[2].y - pts[1].y, pts[2].x - pts[1].x);
+					let sweep = ang2 - ang1;
+					while (sweep > Math.PI) sweep -= Math.PI * 2;
+					while (sweep < -Math.PI) sweep += Math.PI * 2;
+					octx.strokeStyle = '#ffffff';
+					octx.lineWidth = 2;
+					octx.beginPath();
+					octx.arc(pts[1].x, pts[1].y, 34, ang1, ang1 + sweep, sweep < 0);
+					octx.stroke();
+				}
+				// 點標記
+				pts.forEach((p, i) => {
+					octx.beginPath();
+					octx.arc(p.x, p.y, 6, 0, Math.PI * 2);
+					octx.fillStyle = i === 1 ? '#4fc3f7' : '#ffd54f';
+					octx.fill();
+					octx.strokeStyle = '#000';
+					octx.lineWidth = 1;
+					octx.stroke();
+					octx.fillStyle = '#fff';
+					octx.font = 'bold 13px system-ui, sans-serif';
+					octx.fillText(['A', 'O', 'B'][i], p.x + 10, p.y - 10);
+				});
+			}
+
+			overlay.addEventListener('pointerdown', (e) => {
+				const rect = overlay.getBoundingClientRect();
+				const p = { x: ((e.clientX - rect.left) / rect.width) * overlay.width, y: ((e.clientY - rect.top) / rect.height) * overlay.height };
+				if (pts.length >= 3) pts = [];
+				pts.push(p);
+				if (pts.length === 1) camRead.textContent = '點第二下：頂點 O';
+				else if (pts.length === 2) camRead.textContent = '點第三下：端點 B';
+				else {
+					const ang = angleBetween(pts[0], pts[1], pts[2]);
+					lastAngle = ang;
+					camRead.innerHTML = '∠AOB = <span class="ang">' + (ang === null ? '--' : ang.toFixed(1) + '°') + '</span>（再點一下重新測量）';
+				}
+				drawOverlay();
+			});
+
+			async function startCam() {
+				try {
+					stream = await navigator.mediaDevices.getUserMedia({
+						video: { facingMode: 'environment' },
+						audio: false,
+					});
+					cam.srcObject = stream;
+					await cam.play();
+					resizeOverlay();
+				} catch (err) {
+					camRead.textContent = '無法開啟相機：' + err.message + '（需授權且以 https 開啟）';
+				}
+			}
+
+			function stopCam() {
+				if (stream) {
+					stream.getTracks().forEach((t) => t.stop());
+					stream = null;
+				}
+			}
+
+			document.getElementById('cam-start-btn').addEventListener('click', () => {
+				if (stream) {
+					stopCam();
+					document.getElementById('cam-start-btn').textContent = '📷 開啟相機';
+				} else {
+					startCam();
+					document.getElementById('cam-start-btn').textContent = '⏹ 關閉相機';
+				}
+			});
+			document.getElementById('cam-clear-btn').addEventListener('click', () => {
+				pts = [];
+				lastAngle = null;
+				camRead.textContent = '點第一下：端點 A';
+				drawOverlay();
+			});
+
+			// 初始
+			resizeOverlay();
+			enableGyro();
+		</script>
+	</body>
+</html>
