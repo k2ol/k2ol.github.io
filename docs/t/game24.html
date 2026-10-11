@@ -1,0 +1,548 @@
+<!doctype html>
+<html lang="zh-Hant">
+	<head>
+		<meta charset="utf-8" />
+		<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+		<link rel="icon" href="/favicon.ico" />
+		<meta name="viewport" content="width=device-width" />
+		<title>24 點</title>
+		<script>
+			(() => {
+				const saved = localStorage.getItem('t-theme');
+				const theme = saved || (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+				document.documentElement.dataset.theme = theme;
+			})();
+		</script>
+		<style>
+			:root {
+				--bg: #ffffff;
+				--fg: #1a1a1a;
+				--muted: #8a8a8a;
+				--btn-bg: rgba(0, 0, 0, 0.06);
+				--btn-hover: rgba(0, 0, 0, 0.12);
+				--accent: #6366f1;
+				--card: rgba(0, 0, 0, 0.04);
+				--ok: #22a55b;
+			}
+			html[data-theme='dark'] {
+				--bg: #111111;
+				--fg: #f5f5f5;
+				--muted: #9a9a9a;
+				--btn-bg: rgba(255, 255, 255, 0.08);
+				--btn-hover: rgba(255, 255, 255, 0.16);
+				--accent: #8b85ff;
+				--card: rgba(255, 255, 255, 0.06);
+				--ok: #4ade80;
+			}
+			body {
+				margin: 0;
+				min-height: 100vh;
+				background: var(--bg);
+				color: var(--fg);
+				font-family: system-ui, -apple-system, 'Segoe UI', 'Noto Sans TC', sans-serif;
+				display: flex;
+				flex-direction: column;
+				align-items: center;
+				gap: 1rem;
+				padding: 2.5rem 1rem 2rem;
+				box-sizing: border-box;
+				transition: background 0.3s, color 0.3s;
+				user-select: none;
+			}
+			h1 {
+				margin: 0;
+				font-size: 1.4rem;
+				color: var(--muted);
+				font-weight: 600;
+			}
+			#links {
+				position: fixed;
+				top: 1rem;
+				right: 1rem;
+				display: flex;
+				gap: 0.7rem;
+			}
+			#links a {
+				color: var(--muted);
+				text-decoration: none;
+				font-size: 1.2rem;
+			}
+			#links a:hover {
+				color: var(--fg);
+			}
+			.row {
+				display: flex;
+				gap: 0.8rem;
+				align-items: center;
+				flex-wrap: wrap;
+				justify-content: center;
+			}
+			.row > * {
+				font: inherit;
+				padding: 0.5rem 1.1rem;
+				border-radius: 999px;
+				border: none;
+				background: var(--btn-bg);
+				color: inherit;
+				cursor: pointer;
+			}
+			.row > *:hover {
+				background: var(--btn-hover);
+			}
+			#mode-row .mode-on {
+				background: var(--accent);
+				color: #fff;
+				font-weight: 700;
+			}
+			.stats {
+				display: flex;
+				gap: 1.4rem;
+				color: var(--muted);
+				font-size: 0.95rem;
+				flex-wrap: wrap;
+				justify-content: center;
+			}
+			.stats b {
+				color: var(--fg);
+				font-variant-numeric: tabular-nums;
+			}
+			.stats .turn-on {
+				color: var(--accent);
+				font-weight: 700;
+			}
+			#gcards {
+				display: flex;
+				gap: 0.7rem;
+				flex-wrap: wrap;
+				justify-content: center;
+				min-height: 7.6rem;
+				align-items: stretch;
+			}
+			.gcard {
+				width: 5rem;
+				min-height: 7rem;
+				border-radius: 0.7rem;
+				background: #fdfdfb;
+				border: 2px solid #d8d8d2;
+				box-shadow: 0 4px 10px rgba(0, 0, 0, 0.12);
+				display: flex;
+				flex-direction: column;
+				align-items: center;
+				justify-content: center;
+				cursor: pointer;
+				transition: transform 0.15s, border-color 0.15s, box-shadow 0.15s;
+				position: relative;
+				padding: 0.3rem;
+				box-sizing: border-box;
+			}
+			html[data-theme='dark'] .gcard {
+				background: #1d1d22;
+				border-color: #3a3a42;
+			}
+			.gcard:hover {
+				transform: translateY(-0.25rem);
+			}
+			.gcard.sel {
+				border-color: var(--accent);
+				box-shadow: 0 0 0 3px var(--accent), 0 6px 14px rgba(0, 0, 0, 0.2);
+				transform: translateY(-0.35rem);
+			}
+			.gcard.win {
+				border-color: var(--ok);
+				box-shadow: 0 0 0 3px var(--ok);
+			}
+			.gcard .rank {
+				font-size: 2rem;
+				font-weight: 800;
+				line-height: 1.1;
+			}
+			.gcard .val {
+				font-size: 1.7rem;
+				font-weight: 800;
+				line-height: 1.1;
+				font-variant-numeric: tabular-nums;
+			}
+			.gcard .expr {
+				font-size: 0.62rem;
+				color: var(--muted);
+				max-width: 100%;
+				overflow: hidden;
+				text-overflow: ellipsis;
+				white-space: nowrap;
+				margin-top: 0.25rem;
+			}
+			.gcard .sub {
+				font-size: 0.7rem;
+				color: var(--muted);
+			}
+			.gcard .corner {
+				position: absolute;
+				top: 0.25rem;
+				left: 0.4rem;
+				font-size: 0.7rem;
+				color: var(--muted);
+			}
+			#ops {
+				display: flex;
+				gap: 0.9rem;
+			}
+			#ops button {
+				font-size: 1.5rem;
+				font-weight: 800;
+				width: 3.4rem;
+				height: 3.4rem;
+				border-radius: 50%;
+				border: none;
+				background: var(--btn-bg);
+				color: inherit;
+				cursor: pointer;
+			}
+			#ops button:hover {
+				background: var(--btn-hover);
+			}
+			#tip {
+				min-height: 2.4rem;
+				font-size: 1.05rem;
+				font-weight: 700;
+				text-align: center;
+				max-width: 90vw;
+			}
+			#tip .good {
+				color: var(--ok);
+			}
+			#tip .ans {
+				color: var(--accent);
+			}
+			#controls button:disabled {
+				opacity: 0.4;
+				cursor: not-allowed;
+			}
+		</style>
+	</head>
+	<body>
+		<div id="links">
+			<a href="/t/index.html" title="工具箱">🧰</a>
+			<a href="/" title="回首頁">🏠</a>
+		</div>
+		<h1>🃏 24 點</h1>
+		<div class="row" id="mode-row">
+			<button id="mode-single" class="mode-on">👤 單人練習</button>
+			<button id="mode-duel">⚔️ 雙人對戰</button>
+		</div>
+		<div class="stats" id="stats"></div>
+		<div id="gcards"></div>
+		<div id="ops">
+			<button data-op="+" aria-label="加">＋</button>
+			<button data-op="-" aria-label="減">－</button>
+			<button data-op="*" aria-label="乘">×</button>
+			<button data-op="/" aria-label="除">÷</button>
+		</div>
+		<div id="tip"></div>
+		<div class="row" id="controls">
+			<button id="undo-btn">↩ 復原</button>
+			<button id="restart-btn">🔁 重排本題</button>
+			<button id="answer-btn">💡 顯示答案</button>
+			<button id="next-btn">⏭ 下一題</button>
+		</div>
+		<script>
+			// ---------- 分數運算 ----------
+			function gcd(a, b) {
+				return b ? gcd(b, a % b) : a;
+			}
+			function F(n, d) {
+				if (d === 0) throw new Error('div0');
+				if (d < 0) {
+					n = -n;
+					d = -d;
+				}
+				const g = gcd(Math.abs(n), d) || 1;
+				return { n: n / g, d: d / g };
+			}
+			const fAdd = (a, b) => F(a.n * b.d + b.n * a.d, a.d * b.d);
+			const fSub = (a, b) => F(a.n * b.d - b.n * a.d, a.d * b.d);
+			const fMul = (a, b) => F(a.n * b.n, a.d * b.d);
+			const fDiv = (a, b) => {
+				if (b.n === 0) return null;
+				return F(a.n * b.d, a.d * b.n);
+			};
+			const fIs24 = (v) => v.n === 24 && v.d === 1;
+			const fStr = (v) => (v.d === 1 ? String(v.n) : v.n + '/' + v.d);
+
+			// ---------- 求解器（Fisher–Yates 同等公平性用於產題） ----------
+			function randInt(n) {
+				const limit = Math.floor(0x100000000 / n) * n;
+				const buf = new Uint32Array(1);
+				let v;
+				do {
+					crypto.getRandomValues(buf);
+					v = buf[0];
+				} while (v >= limit);
+				return v % n;
+			}
+
+			// 回傳所有能湊出 24 的式子（至少一個代表可解）
+			function solve24(nums) {
+				const res = [];
+				const rec = (list) => {
+					if (res.length > 0) return; // 找到一個就夠（產題／提示用）
+					if (list.length === 1) {
+						if (fIs24(list[0].v)) res.push(list[0].e);
+						return;
+					}
+					for (let i = 0; i < list.length && res.length === 0; i++) {
+						for (let j = 0; j < list.length && res.length === 0; j++) {
+							if (i === j) continue;
+							const rest = list.filter((_, k) => k !== i && k !== j);
+							const a = list[i];
+							const b = list[j];
+							const cands = [
+								{ v: fAdd(a.v, b.v), e: '(' + a.e + '+' + b.e + ')' },
+								{ v: fSub(a.v, b.v), e: '(' + a.e + '−' + b.e + ')' },
+								{ v: fMul(a.v, b.v), e: '(' + a.e + '×' + b.e + ')' },
+							];
+							const dv = fDiv(a.v, b.v);
+							if (dv) cands.push({ v: dv, e: '(' + a.e + '÷' + b.e + ')' });
+							for (const c of cands) rec([...rest, c]);
+						}
+					}
+				};
+				rec(nums.map((n) => ({ v: F(n, 1), e: String(n) })));
+				return res;
+			}
+
+			// ---------- 遊戲狀態 ----------
+			const gcardsEl = document.getElementById('gcards');
+			const tipEl = document.getElementById('tip');
+			const statsEl = document.getElementById('stats');
+			const undoBtn = document.getElementById('undo-btn');
+			const RANK = null; // RANKVAL[v-1] 對應牌值 v 的花色字
+			const RANKVAL = ['A', '2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K'];
+
+			let mode = 'single';
+			let nums = []; // 本題四個數字
+			let cards = []; // { v:{n,d}, expr, origin:null|index }
+			let history = [];
+			let sel = null;
+			let pendOp = null;
+			let solved = false;
+			let puzzleNo = 0;
+			let wins = 0;
+			let streak = 0;
+			let scores = [0, 0];
+			let turn = 0;
+			let puzzleStart = 0;
+			let timerId = null;
+			let finalTime = '';
+
+			function fmtTime(ms) {
+				const s = Math.floor(ms / 1000);
+				return String(Math.floor(s / 60)).padStart(2, '0') + ':' + String(s % 60).padStart(2, '0');
+			}
+
+			function renderStats() {
+				const t = solved ? finalTime : fmtTime(Date.now() - puzzleStart);
+				if (mode === 'single') {
+					statsEl.innerHTML =
+						'⏱ <b>' + t + '</b><span>第 <b>' + puzzleNo + '</b> 題</span><span>答對 <b>' + wins + '</b></span><span>連中 <b>' + streak + '</b></span>';
+				} else {
+					statsEl.innerHTML =
+						'<span class="' + (turn === 0 ? 'turn-on' : '') + '">玩家一 <b>' + scores[0] + '</b></span>' +
+						'<b>' + t + '</b>' +
+						'<span class="' + (turn === 1 ? 'turn-on' : '') + '">玩家二 <b>' + scores[1] + '</b></span>' +
+						'<span>第 <b>' + puzzleNo + '</b> 題</span><span>輪到 <b>' + (turn === 0 ? '玩家一' : '玩家二') + '</b></span>';
+				}
+			}
+			function startTimer() {
+				clearInterval(timerId);
+				puzzleStart = Date.now();
+				timerId = setInterval(renderStats, 250);
+			}
+
+			function newPuzzle(switchTurn) {
+				for (let attempt = 0; attempt < 300; attempt++) {
+					const cand = Array.from({ length: 4 }, () => 1 + randInt(13));
+					if (solve24(cand.slice()).length) {
+						nums = cand;
+						break;
+					}
+					if (attempt === 299) nums = [2, 3, 4, 6];
+				}
+				if (switchTurn && mode === 'duel') turn = 1 - turn;
+				puzzleNo++;
+				cards = nums.map((n) => ({ v: F(n, 1), expr: String(n), origin: n }));
+				history = [];
+				sel = null;
+				pendOp = null;
+				solved = false;
+				finalTime = '';
+				renderCards();
+				renderStats();
+				startTimer();
+				tipEl.textContent = '先點一張牌，再按運算符，然後點另一張牌';
+			}
+
+			function cardLabel(c) {
+				return c.origin !== null ? RANKVAL[c.origin - 1] : fStr(c.v);
+			}
+
+			function renderCards() {
+				gcardsEl.innerHTML = '';
+				cards.forEach((c, i) => {
+					const d = document.createElement('div');
+					d.className = 'gcard' + (i === sel ? ' sel' : '') + (solved && cards.length === 1 ? ' win' : '');
+					if (c.origin !== null) {
+						const corner = document.createElement('span');
+						corner.className = 'corner';
+						corner.textContent = i + 1;
+						const rank = document.createElement('span');
+						rank.className = 'rank';
+						rank.textContent = RANKVAL[c.origin - 1];
+						d.append(corner, rank);
+						if (RANKVAL[c.origin - 1] !== String(c.origin)) {
+							const s = document.createElement('span');
+							s.className = 'sub';
+							s.textContent = '= ' + c.origin;
+							d.append(s);
+						}
+					} else {
+						const val = document.createElement('span');
+						val.className = 'val';
+						val.textContent = fStr(c.v);
+						const ex = document.createElement('span');
+						ex.className = 'expr';
+						ex.textContent = c.expr;
+						d.append(val, ex);
+					}
+					d.addEventListener('click', () => onCard(i));
+					gcardsEl.append(d);
+				});
+				undoBtn.disabled = history.length === 0 || solved;
+			}
+
+			function onCard(i) {
+				if (solved) return;
+				if (sel === null || pendOp === null) {
+					sel = i;
+					pendOp = null;
+					renderCards();
+					tipEl.textContent = '選一個運算符（＋－×÷）';
+					return;
+				}
+				if (i === sel) return;
+				doMerge(sel, pendOp, i);
+			}
+
+			document.querySelectorAll('#ops button').forEach((b) => {
+				b.addEventListener('click', () => {
+					if (solved) return;
+					if (sel === null) {
+						tipEl.textContent = '先點一張牌';
+						return;
+					}
+					pendOp = b.dataset.op;
+					const sym = { '+': '＋', '-': '－', '*': '×', '/': '÷' }[pendOp];
+					tipEl.textContent = '再點另一張牌，與「' + cardLabel(cards[sel]) + '」做 ' + sym;
+				});
+			});
+
+			function doMerge(i, op, j) {
+				const a = cards[i];
+				const b = cards[j];
+				let v;
+				const sym = { '+': '+', '-': '−', '*': '×', '/': '÷' }[op];
+				try {
+					if (op === '+') v = fAdd(a.v, b.v);
+					else if (op === '-') v = fSub(a.v, b.v);
+					else if (op === '*') v = fMul(a.v, b.v);
+					else v = fDiv(a.v, b.v);
+				} catch (e) {
+					v = null;
+				}
+				if (!v) {
+					tipEl.textContent = '不能除以零，換個算法吧';
+					return;
+				}
+				history.push(JSON.stringify(cards));
+				const merged = { v, expr: '(' + a.expr + sym + b.expr + ')', origin: null };
+				cards = cards.filter((_, k) => k !== i && k !== j);
+				cards.push(merged);
+				sel = null;
+				pendOp = null;
+				renderCards();
+				if (cards.length === 1) {
+					if (fIs24(cards[0].v)) {
+						solved = true;
+						finalTime = fmtTime(Date.now() - puzzleStart);
+						clearInterval(timerId);
+						renderCards();
+						if (mode === 'single') {
+							wins++;
+							streak++;
+							renderStats();
+							tipEl.innerHTML = '<span class="good">🎉 答對！' + escapeHtml(cards[0].expr) + ' = 24　用時 ' + finalTime + '</span>';
+						} else {
+							scores[turn]++;
+							renderStats();
+							tipEl.innerHTML =
+								'<span class="good">🎉 ' + (turn === 0 ? '玩家一' : '玩家二') + '得分！' + escapeHtml(cards[0].expr) + ' = 24　用時 ' + finalTime + '</span>';
+						}
+						return;
+					}
+					tipEl.textContent = '最後得到 ' + fStr(cards[0].v) + '，不是 24。可「復原」換算法，或「下一題」';
+					return;
+				}
+				tipEl.textContent = '得到 ' + fStr(v) + '，繼續組合！';
+			}
+
+			function escapeHtml(s) {
+				const d = document.createElement('div');
+				d.textContent = s;
+				return d.innerHTML;
+			}
+
+			undoBtn.addEventListener('click', () => {
+				if (!history.length || solved) return;
+				cards = JSON.parse(history.pop());
+				sel = null;
+				pendOp = null;
+				renderCards();
+				tipEl.textContent = '已復原上一步';
+			});
+			document.getElementById('restart-btn').addEventListener('click', () => {
+				if (solved) return;
+				cards = nums.map((n) => ({ v: F(n, 1), expr: String(n), origin: n }));
+				history = [];
+				sel = null;
+				pendOp = null;
+				renderCards();
+				startTimer();
+				tipEl.textContent = '已重排本題，計時重新開始';
+			});
+			document.getElementById('answer-btn').addEventListener('click', () => {
+				const sols = solve24(nums.slice());
+				tipEl.innerHTML = sols.length
+					? '答案：<span class="ans">' + escapeHtml(sols[0]) + ' = 24</span>（括號順序就是點牌順序）'
+					: '這題無解？不可能，題目都是驗證過的';
+			});
+			document.getElementById('next-btn').addEventListener('click', () => {
+				if (mode === 'single' && !solved) streak = 0;
+				newPuzzle(true);
+			});
+			document.getElementById('mode-single').addEventListener('click', () => setMode('single'));
+			document.getElementById('mode-duel').addEventListener('click', () => setMode('duel'));
+			function setMode(m) {
+				mode = m;
+				document.getElementById('mode-single').className = m === 'single' ? 'mode-on' : '';
+				document.getElementById('mode-duel').className = m === 'duel' ? 'mode-on' : '';
+				puzzleNo = 0;
+				wins = 0;
+				streak = 0;
+				scores = [0, 0];
+				turn = 0;
+				newPuzzle(false);
+			}
+
+			setMode('single');
+		</script>
+	</body>
+</html>
