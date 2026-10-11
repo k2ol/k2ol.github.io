@@ -1,0 +1,219 @@
+---
+---
+
+<html lang="zh-Hant">
+	<head>
+		<meta charset="utf-8" />
+		<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+		<link rel="icon" href="/favicon.ico" />
+		<meta name="viewport" content="width=device-width" />
+		<meta name="generator" content={Astro.generator} />
+		<title>現在時間</title>
+		<script is:inline>
+			(() => {
+				const saved = localStorage.getItem('t-theme');
+				const theme = saved || (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+				document.documentElement.dataset.theme = theme;
+			})();
+		</script>
+		<style>
+			:root {
+				--bg: #ffffff;
+				--fg: #1a1a1a;
+				--muted: #8a8a8a;
+				--btn-bg: rgba(0, 0, 0, 0.06);
+				--btn-hover: rgba(0, 0, 0, 0.12);
+			}
+			html[data-theme='dark'] {
+				--bg: #111111;
+				--fg: #f5f5f5;
+				--muted: #9a9a9a;
+				--btn-bg: rgba(255, 255, 255, 0.08);
+				--btn-hover: rgba(255, 255, 255, 0.16);
+			}
+			html,
+			body {
+				height: 100%;
+			}
+			body {
+				margin: 0;
+				background: var(--bg);
+				color: var(--fg);
+				font-family: system-ui, -apple-system, 'Segoe UI', 'Noto Sans TC', sans-serif;
+				display: flex;
+				flex-direction: column;
+				align-items: center;
+				justify-content: center;
+				overflow: hidden;
+				transition: background 0.3s, color 0.3s;
+				user-select: none;
+			}
+			#clock {
+				font-size: min(16.5vw, 42vh);
+				font-weight: 700;
+				line-height: 1;
+				letter-spacing: 0.02em;
+				font-variant-numeric: tabular-nums;
+				display: flex;
+				align-items: baseline;
+				white-space: nowrap;
+			}
+			#ampm {
+				font-size: min(3.5vw, 8vh);
+				color: var(--muted);
+				margin-left: 0.4em;
+			}
+			.colon {
+				animation: blink 2s steps(1) infinite;
+			}
+			@keyframes blink {
+				50% {
+					opacity: 0.25;
+				}
+			}
+			#date {
+				margin-top: 2vh;
+				font-size: min(3.2vw, 5.5vh);
+				color: var(--muted);
+				font-variant-numeric: tabular-nums;
+			}
+			#date.hidden,
+			#ampm.hidden {
+				display: none;
+			}
+			#controls {
+				position: fixed;
+				bottom: 0;
+				left: 0;
+				right: 0;
+				display: flex;
+				justify-content: center;
+				gap: 0.6rem;
+				padding: 1rem;
+				opacity: 0;
+				transition: opacity 0.3s;
+			}
+			body:hover #controls,
+			body:focus-within #controls {
+				opacity: 1;
+			}
+			#controls button {
+				font: inherit;
+				font-size: 0.95rem;
+				padding: 0.45rem 1rem;
+				border: none;
+				border-radius: 999px;
+				background: var(--btn-bg);
+				color: inherit;
+				cursor: pointer;
+			}
+			#controls button:hover {
+				background: var(--btn-hover);
+			}
+			#controls a {
+				color: inherit;
+				text-decoration: none;
+				display: flex;
+				align-items: center;
+				opacity: 0.7;
+			}
+			#controls a:hover {
+				opacity: 1;
+			}
+		</style>
+	</head>
+	<body>
+		<div id="clock" role="timer" aria-label="現在時間">
+			<span id="hh">--</span><span class="colon">:</span><span id="mm">--</span><span class="colon">:</span><span id="ss">--</span><span id="ampm" class="hidden"></span>
+		</div>
+		<div id="date">　</div>
+		<div id="controls">
+			<button id="fmt-btn">24H</button>
+			<button id="date-btn">隱藏日期</button>
+			<button id="theme-btn">深色</button>
+			<button id="fs-btn" title="全螢幕">⛶</button>
+			<a href="/t.html" title="導覽頁">🧭</a>
+			<a href="/" title="回首頁">🏠</a>
+		</div>
+		<script>
+			const pad = (n) => String(n).padStart(2, '0');
+			const hh = document.getElementById('hh')!;
+			const mm = document.getElementById('mm')!;
+			const ss = document.getElementById('ss')!;
+			const ampm = document.getElementById('ampm')!;
+			const dateEl = document.getElementById('date')!;
+			const colons = document.querySelectorAll<HTMLElement>('.colon');
+
+			let use24 = localStorage.getItem('t-24h') !== '0';
+			let showDate = localStorage.getItem('t-date') !== '0';
+
+			function tick() {
+				const now = new Date();
+				let h = now.getHours();
+				if (use24) {
+					ampm.classList.add('hidden');
+				} else {
+					ampm.classList.remove('hidden');
+					ampm.textContent = h < 12 ? '上午' : '下午';
+					h = h % 12 || 12;
+				}
+				hh.textContent = pad(h);
+				mm.textContent = pad(now.getMinutes());
+				ss.textContent = pad(now.getSeconds());
+				dateEl.textContent = now.toLocaleDateString('zh-TW', {
+					year: 'numeric',
+					month: 'long',
+					day: 'numeric',
+					weekday: 'long',
+				});
+				// 對齊下一秒再更新，避免飄移
+				setTimeout(tick, 1000 - (Date.now() % 1000) + 20);
+			}
+			tick();
+
+			// 秒針走動時讓冒號每整秒閃一下
+			setInterval(() => {
+				colons.forEach((c) => {
+					c.style.animation = 'none';
+					void c.offsetWidth;
+					c.style.animation = '';
+				});
+			}, 1000);
+
+			function renderControls() {
+				(document.getElementById('fmt-btn')!).textContent = use24 ? '24H' : '12H';
+				(document.getElementById('date-btn')!).textContent = showDate ? '隱藏日期' : '顯示日期';
+				dateEl.classList.toggle('hidden', !showDate);
+				(document.getElementById('theme-btn')!).textContent =
+					document.documentElement.dataset.theme === 'dark' ? '淺色' : '深色';
+			}
+
+			document.getElementById('fmt-btn')!.addEventListener('click', () => {
+				use24 = !use24;
+				localStorage.setItem('t-24h', use24 ? '1' : '0');
+				tick();
+				renderControls();
+			});
+			document.getElementById('date-btn')!.addEventListener('click', () => {
+				showDate = !showDate;
+				localStorage.setItem('t-date', showDate ? '1' : '0');
+				renderControls();
+			});
+			document.getElementById('theme-btn')!.addEventListener('click', () => {
+				const next = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark';
+				document.documentElement.dataset.theme = next;
+				localStorage.setItem('t-theme', next);
+				renderControls();
+			});
+			document.getElementById('fs-btn')!.addEventListener('click', () => {
+				if (document.fullscreenElement) {
+					document.exitFullscreen();
+				} else {
+					document.documentElement.requestFullscreen();
+				}
+			});
+
+			renderControls();
+		</script>
+	</body>
+</html>

@@ -14,3 +14,4 @@
 - 目前 `src/pages/index.astro` 仍是範本預設內容（標題只有「Astro」），尚未建立實際頁面內容。
 - 10:59 起 memory.md 納入 git 追蹤並隨更新 push（原 `.gitignore` 有排除 memory.md，已將該行移除）；`AGENTS.md` 仍維持本地檔，不入庫。
 - 11:20 新增現在時間頁面 `src/pages/t/index.astro`（路由 `/t/`，參考 tw.piliapp.com/time）：大字即時時鐘＋中文日期，秒數對齊整秒更新；附 12H/24H、日期顯示/隱藏、深淺色（跟隨系統並記住選擇）、全螢幕等切換，設定存 localStorage。首頁 index.astro 加了連往 `/t/` 的連結。注意：控制按鈕預設隱藏，滑鼠移到頁面上才顯示（`body:hover #controls`）。已 build 更新 `docs/` 並以瀏覽器驗證時鐘與切換功能正常。
+- 11:42 頁面重構（使用者將 `index.astro` git mv 成 `time.astro`，並在 `astro.config.mjs` 加 `build.format: 'file'`，全站輸出改為 `頁面.html` 而非 `頁面/index.html`）：`/t/time.astro` 是現在時間頁（網址 `/t/time.html`），`/t/index.astro` 改為導賞頁「站內導覽」（網址 `/t.html`，`/t/` 已不存在）。注意：format: 'file' 之下 `src/pages/t/index.astro` 的網址是 `/t.html` 而非 `/t/`，站內連結都用 `.html` 結尾；時鐘頁控制列的 🧭 連結指向 `/t.html`。舊的 `docs/t/index.html` 已刪除。已 rebuild 並以瀏覽器驗證導賞頁、時鐘頁與互相連結正常。
