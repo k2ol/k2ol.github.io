@@ -206,9 +206,9 @@
 
 			let bpm = 120;
 			let beatsPerBar = 4;
-			// 人聲數拍：用瀏覽器語音合成（zh-TW）念出拍號，略提前發聲補償合成延遲
+			// 人聲數拍：播放預先合成的 zh-TW MP3（public/t/voice/1-8.mp3），以 Web Audio 排程精準對拍
 			let voice = localStorage.getItem('t-voice') === '1';
-			const beatNames = ['一', '二', '三', '四', '五', '六', '七', '八'];
+			let voiceBufs = null;
 			let ctx = null;
 			let running = false;
 			let nextTime = 0;
@@ -253,6 +253,22 @@
 				osc.stop(time + 0.07);
 			}
 
+			async function loadVoiceBuffers() {
+				try {
+					const bufs = [];
+					for (let i = 1; i <= 8; i++) {
+						const res = await fetch(`/t/voice/${i}.mp3`);
+						if (!res.ok) throw new Error(`HTTP ${res.status}`);
+						bufs.push(await ctx.decodeAudioData(await res.arrayBuffer()));
+					}
+					voiceBufs = bufs;
+				} catch (err) {
+					console.warn('人聲語音檔載入失敗，已停用人聲：', err);
+					voice = false;
+					renderVoiceBtn();
+				}
+			}
+
 			function schedule() {
 				while (nextTime < ctx.currentTime + 0.15) {
 					const b = beat;
@@ -261,11 +277,11 @@
 					setTimeout(() => {
 						if (running) highlight(b);
 					}, Math.max(0, (nextTime - ctx.currentTime) * 1000));
-					if (voice) {
-						const vd = Math.max(0, (nextTime - ctx.currentTime) * 1000 - 100);
-						setTimeout(() => {
-							if (running) speakCount(beatNames[b]);
-						}, vd);
+					if (voice && voiceBufs) {
+						const src = ctx.createBufferSource();
+						src.buffer = voiceBufs[b];
+						src.connect(ctx.destination);
+						src.start(nextTime);
 					}
 					nextTime += 60 / bpm;
 					beat = (b + 1) % beatsPerBar;
@@ -273,17 +289,10 @@
 				timer = setTimeout(schedule, 25);
 			}
 
-			function speakCount(text) {
-				if (!('speechSynthesis' in window)) return;
-				const u = new SpeechSynthesisUtterance(text);
-				u.lang = 'zh-TW';
-				u.rate = 1.6;
-				speechSynthesis.speak(u);
-			}
-
-			function start() {
+			async function start() {
 				ctx = new (window.AudioContext || window.webkitAudioContext)();
-				nextTime = ctx.currentTime + 0.1;
+				if (voice && !voiceBufs) await loadVoiceBuffers();
+				nextTime = ctx.currentTime + 0.15;
 				beat = 0;
 				running = true;
 				schedule();
@@ -293,7 +302,6 @@
 			function stop() {
 				running = false;
 				clearTimeout(timer);
-				if ('speechSynthesis' in window) speechSynthesis.cancel();
 				ctx.close();
 				ctx = null;
 				highlight(-1);
@@ -337,7 +345,6 @@
 			voiceBtn.addEventListener('click', () => {
 				voice = !voice;
 				localStorage.setItem('t-voice', voice ? '1' : '0');
-				if (!voice && 'speechSynthesis' in window) speechSynthesis.cancel();
 				renderVoiceBtn();
 			});
 
