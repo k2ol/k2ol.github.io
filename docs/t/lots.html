@@ -1,0 +1,412 @@
+<!doctype html>
+<html lang="zh-Hant">
+	<head>
+		<meta charset="utf-8" />
+		<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+		<link rel="icon" href="/favicon.ico" />
+		<meta name="viewport" content="width=device-width" />
+		<title>隨機抽籤</title>
+		<script>
+			(() => {
+				const saved = localStorage.getItem('t-theme');
+				const theme = saved || (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+				document.documentElement.dataset.theme = theme;
+			})();
+		</script>
+		<style>
+			:root {
+				--bg: #ffffff;
+				--fg: #1a1a1a;
+				--muted: #8a8a8a;
+				--btn-bg: rgba(0, 0, 0, 0.06);
+				--btn-hover: rgba(0, 0, 0, 0.12);
+				--accent: #6366f1;
+				--card: rgba(0, 0, 0, 0.04);
+			}
+			html[data-theme='dark'] {
+				--bg: #111111;
+				--fg: #f5f5f5;
+				--muted: #9a9a9a;
+				--btn-bg: rgba(255, 255, 255, 0.08);
+				--btn-hover: rgba(255, 255, 255, 0.16);
+				--accent: #8b85ff;
+				--card: rgba(255, 255, 255, 0.06);
+			}
+			body {
+				margin: 0;
+				min-height: 100vh;
+				background: var(--bg);
+				color: var(--fg);
+				font-family: system-ui, -apple-system, 'Segoe UI', 'Noto Sans TC', sans-serif;
+				display: flex;
+				flex-direction: column;
+				align-items: center;
+				gap: 1.2rem;
+				padding: 2.5rem 1rem 2rem;
+				box-sizing: border-box;
+				transition: background 0.3s, color 0.3s;
+			}
+			h1 {
+				margin: 0;
+				font-size: 1.4rem;
+				color: var(--muted);
+				font-weight: 600;
+			}
+			#links {
+				position: fixed;
+				top: 1rem;
+				right: 1rem;
+				display: flex;
+				gap: 0.7rem;
+			}
+			#links a {
+				color: var(--muted);
+				text-decoration: none;
+				font-size: 1.2rem;
+			}
+			#links a:hover {
+				color: var(--fg);
+			}
+			.setup {
+				display: flex;
+				gap: 1rem;
+				align-items: center;
+				flex-wrap: wrap;
+				justify-content: center;
+			}
+			.setup label {
+				display: flex;
+				align-items: center;
+				gap: 0.45rem;
+				color: var(--muted);
+				font-size: 0.95rem;
+			}
+			.setup input[type='number'],
+			.setup textarea {
+				font: inherit;
+				background: var(--card);
+				color: inherit;
+				border: 1px solid var(--btn-hover);
+				border-radius: 0.6rem;
+				padding: 0.4rem 0.6rem;
+			}
+			.setup input[type='number'] {
+				width: 4.5rem;
+				text-align: center;
+			}
+			#names {
+				width: min(90vw, 26rem);
+				height: 7rem;
+				resize: vertical;
+				padding: 0.6rem 0.8rem;
+				border-radius: 0.8rem;
+				border: 1px solid var(--btn-hover);
+				background: var(--card);
+				color: inherit;
+				font-size: 0.95rem;
+				line-height: 1.5;
+			}
+			#names:focus {
+				outline: 2px solid var(--accent);
+			}
+			.row {
+				display: flex;
+				gap: 0.8rem;
+				align-items: center;
+				flex-wrap: wrap;
+				justify-content: center;
+			}
+			.row > * {
+				font: inherit;
+				padding: 0.5rem 1.1rem;
+				border-radius: 999px;
+				border: none;
+				background: var(--btn-bg);
+				color: inherit;
+				cursor: pointer;
+			}
+			.row > *:hover {
+				background: var(--btn-hover);
+			}
+			#draw-btn {
+				font-size: 1.15rem;
+				font-weight: 700;
+				padding: 0.7rem 2.2rem;
+				background: var(--accent);
+				color: #fff;
+			}
+			#draw-btn:hover {
+				filter: brightness(1.1);
+				background: var(--accent);
+			}
+			#draw-btn:disabled {
+				opacity: 0.45;
+				cursor: not-allowed;
+			}
+			#sticks {
+				display: flex;
+				flex-wrap: wrap;
+				gap: 0.45rem;
+				justify-content: center;
+				max-width: min(94vw, 46rem);
+				perspective: 900px;
+			}
+			.stick {
+				width: 2.6rem;
+				height: 5.6rem;
+				border-radius: 0.5rem 0.5rem 0.3rem 0.3rem;
+				background: linear-gradient(180deg, #d8b98c, #c9a06a);
+				border: 1px solid rgba(0, 0, 0, 0.2);
+				display: flex;
+				align-items: center;
+				justify-content: center;
+				cursor: pointer;
+				transition: transform 0.35s, opacity 0.35s, background 0.35s;
+				position: relative;
+			}
+			.stick .label {
+				writing-mode: vertical-rl;
+				font-weight: 700;
+				color: #6b3f1d;
+				font-size: 1rem;
+				letter-spacing: 0.1rem;
+			}
+			.stick .mark {
+				position: absolute;
+				inset: 0;
+				display: flex;
+				align-items: center;
+				justify-content: center;
+				font-size: 1.6rem;
+				opacity: 0;
+				transform: rotateY(180deg);
+				transition: opacity 0.4s 0.15s, transform 0.4s 0.15s;
+			}
+			.stick.flip {
+				background: linear-gradient(180deg, #8b85ff, #6366f1);
+			}
+			.stick.flip .label {
+				opacity: 0;
+			}
+			.stick.flip .mark {
+				opacity: 1;
+				transform: rotateY(0);
+			}
+			.stick.flip.hit .mark {
+				color: #ffd54f;
+				text-shadow: 0 0 14px #ffb300;
+			}
+			.stick.flip.miss .mark {
+				color: rgba(255, 255, 255, 0.85);
+			}
+			.stick.taken {
+				opacity: 0.35;
+				pointer-events: none;
+				transform: scale(0.92);
+			}
+			#result {
+				min-height: 2rem;
+				font-size: 1.2rem;
+				font-weight: 700;
+				text-align: center;
+			}
+			#result .win {
+				color: var(--accent);
+			}
+			.hint {
+				color: var(--muted);
+				font-size: 0.88rem;
+				margin: 0;
+			}
+		</style>
+	</head>
+	<body>
+		<div id="links">
+			<a href="/t/index.html" title="工具箱">🧰</a>
+			<a href="/" title="回首頁">🏠</a>
+		</div>
+		<h1>🎋 隨機抽籤</h1>
+		<div id="result">設定好籤數後，點「抽籤」或直接點籤支</div>
+		<div class="setup">
+			<label>籤的總數 <input type="number" id="total" min="2" max="200" value="10" /></label>
+			<label>中籤數 <input type="number" id="hits" min="1" max="199" value="1" /></label>
+		</div>
+		<textarea id="names" spellcheck="false" aria-label="籤的內容，每行一個（可留空使用預設）" placeholder="自訂籤的內容（每行一個，留空則用第 1、2、3… 順位）"></textarea>
+		<div class="row">
+			<button id="apply-btn">↺ 重新洗籤</button>
+		</div>
+		<div id="sticks"></div>
+		<div class="row">
+			<button id="draw-btn">🎲 抽籤</button>
+			<button id="auto-btn">依序自動抽</button>
+		</div>
+		<p class="hint">每支籤被抽中的機率均等（不重複）；點單支籤翻面揭曉，「重新洗籤」可再玩一輪。</p>
+		<script>
+			const totalEl = document.getElementById('total');
+			const hitsEl = document.getElementById('hits');
+			const namesEl = document.getElementById('names');
+			const sticksEl = document.getElementById('sticks');
+			const resultEl = document.getElementById('result');
+			const drawBtn = document.getElementById('draw-btn');
+			const autoBtn = document.getElementById('auto-btn');
+			const applyBtn = document.getElementById('apply-btn');
+
+			let total = 10;
+			let hitSet = new Set(); // 中籤的索引
+			let drawn = 0;
+			let hitCount = 0;
+			let labels = [];
+			let busy = false; // 自動抽進行中
+
+			function mod(n, m) {
+				return ((n % m) + m) % m;
+			}
+
+			// 無偏差隨機整數 [0, n)
+			function randInt(n) {
+				const limit = Math.floor(0x100000000 / n) * n;
+				const buf = new Uint32Array(1);
+				let v;
+				do {
+					crypto.getRandomValues(buf);
+					v = buf[0];
+				} while (v >= limit);
+				return v % n;
+			}
+
+			// 從 n 取 k 個不重複索引（Fisher–Yates 部分洗牌）
+			function pickIndices(n, k) {
+				const arr = [...Array(n).keys()];
+				for (let i = 0; i < k; i++) {
+					const j = i + randInt(n - i);
+					[arr[i], arr[j]] = [arr[j], arr[i]];
+				}
+				return arr.slice(0, k);
+			}
+
+			function build() {
+				total = Math.min(200, Math.max(2, Number(totalEl.value) || 10));
+				const hits = Math.min(total - 1, Math.max(1, Number(hitsEl.value) || 1));
+				totalEl.value = total;
+				hitsEl.value = hits;
+				hitSet = new Set(pickIndices(total, hits));
+				// 自訂籤文：留空則用流水號
+				const custom = namesEl.value.split('\n').map((s) => s.trim()).filter(Boolean);
+				labels = Array.from({ length: total }, (_, i) => custom[i] ?? String(i + 1));
+				drawn = 0;
+				hitCount = 0;
+				resultEl.textContent = '設定好籤數後，點「抽籤」或直接點籤支';
+				drawBtn.disabled = false;
+				autoBtn.disabled = false;
+				sticksEl.innerHTML = '';
+				for (let i = 0; i < total; i++) {
+					const s = document.createElement('div');
+					s.className = 'stick';
+					s.dataset.idx = i;
+					const l = document.createElement('span');
+					l.className = 'label';
+					l.textContent = labels[i];
+					const m = document.createElement('span');
+					m.className = 'mark';
+					m.textContent = hitSet.has(i) ? '🎉 中' : '×';
+					s.append(l, m);
+					sticksEl.append(s);
+				}
+			}
+
+			function reveal(idx) {
+				if (drawn >= total) return null; // 本輪已結束
+				const s = sticksEl.children[idx];
+				if (!s || s.classList.contains('taken')) return null;
+				const isHit = hitSet.has(idx);
+				s.classList.add('flip');
+				setTimeout(() => s.classList.add('taken'), 700);
+				drawn++;
+				if (isHit) hitCount++;
+				// 剩餘未抽 = 總數 - 已抽；若未中的籤數等於剩餘數，其餘全是明牌
+				const remain = total - drawn;
+				if (hitCount === hitSet.size || drawn === total || hitSet.size - hitCount === remain) {
+					finishRound();
+				}
+				return isHit;
+			}
+
+			function finishRound() {
+				drawn = total; // 其餘視為已揭曉
+				// 未翻面的籤先翻面（顯示中/×），停留一下再淡出
+				for (const s of sticksEl.children) {
+					if (!s.classList.contains('flip')) {
+						s.classList.add('flip');
+						setTimeout(() => s.classList.add('taken'), 800);
+					}
+				}
+				const winners = [...hitSet].map((i) => labels[i]);
+				resultEl.innerHTML =
+					'中籤：' + winners.map((w) => '<span class="win">' + escapeHtml(w) + '</span>').join('、') + ' 🎉';
+				drawBtn.disabled = true;
+				autoBtn.disabled = true;
+			}
+
+			function escapeHtml(s) {
+				const d = document.createElement('div');
+				d.textContent = s;
+				return d.innerHTML;
+			}
+
+			drawBtn.addEventListener('click', () => {
+				if (busy) return;
+				const remain = [...sticksEl.children].map((s, i) => (s.classList.contains('taken') ? -1 : i)).filter((i) => i >= 0);
+				if (!remain.length) return;
+				const idx = remain[randInt(remain.length)];
+				const isHit = reveal(idx);
+				if (isHit && !resultEl.textContent.includes('中籤：')) {
+					resultEl.innerHTML = '抽中：<span class="win">' + escapeHtml(labels[idx]) + '</span> 🎉';
+				} else if (isHit !== null && !isHit) {
+					resultEl.textContent = '「' + labels[idx] + '」沒中，再試一次？';
+				}
+			});
+
+			autoBtn.addEventListener('click', () => {
+				if (busy) return;
+				const remain = [...sticksEl.children].map((s, i) => (s.classList.contains('taken') ? -1 : i)).filter((i) => i >= 0);
+				if (!remain.length) return;
+				// 隨機順序依序揭曉
+				for (let i = remain.length - 1; i > 0; i--) {
+					const j = randInt(i + 1);
+					[remain[i], remain[j]] = [remain[j], remain[i]];
+				}
+				busy = true;
+				drawBtn.disabled = true;
+				autoBtn.disabled = true;
+				remain.forEach((idx, k) => setTimeout(() => reveal(idx), k * 260));
+				setTimeout(() => {
+					busy = false;
+					if (!resultEl.textContent.includes('中籤：')) {
+						drawBtn.disabled = false;
+						autoBtn.disabled = false;
+					}
+				}, remain.length * 260 + 500);
+			});
+
+			sticksEl.addEventListener('click', (e) => {
+				const s = e.target.closest('.stick');
+				if (!s || s.classList.contains('taken') || busy) return;
+				const idx = Number(s.dataset.idx);
+				const isHit = reveal(idx);
+				if (isHit === null) return; // 本輪已結束
+				if (isHit) {
+					resultEl.innerHTML = '中籤：<span class="win">' + escapeHtml(labels[idx]) + '</span> 🎉';
+				} else {
+					resultEl.textContent = '「' + labels[idx] + '」沒中，再試一次？';
+				}
+			});
+
+			applyBtn.addEventListener('click', build);
+			totalEl.addEventListener('change', build);
+			hitsEl.addEventListener('change', build);
+			namesEl.addEventListener('change', build);
+
+			build();
+		</script>
+	</body>
+</html>
