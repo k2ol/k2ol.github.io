@@ -12,3 +12,4 @@
 - `docs/` 內是建置產物，請勿直接手改，一律以 build 產生。
 - 開發伺服器依 AGENTS.md 慣例：背景模式 `astro dev --background` 啟動，用 `astro dev stop` / `astro dev status` / `astro dev logs` 管理。
 - 目前 `src/pages/index.astro` 仍是範本預設內容（標題只有「Astro」），尚未建立實際頁面內容。
+- 10:59 起 memory.md 納入 git 追蹤並隨更新 push（原 `.gitignore` 有排除 memory.md，已將該行移除）；`AGENTS.md` 仍維持本地檔，不入庫。
