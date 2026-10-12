@@ -1,0 +1,822 @@
+<!doctype html>
+<html lang="zh-Hant">
+	<head>
+		<meta charset="utf-8" />
+		<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+		<link rel="icon" href="/favicon.ico" />
+		<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+		<title>科學計算機</title>
+		<script>
+			(() => {
+				const saved = localStorage.getItem('t-theme');
+				const theme = saved || (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+				document.documentElement.dataset.theme = theme;
+			})();
+		</script>
+		<style>
+			:root {
+				--bg: #17181c;
+				--pad: #202226;
+				--key: #4a505b;
+				--key-op: #767d89;
+				--key-num: #101114;
+				--key-green: #35b26a;
+				--key-orange: #e79b3c;
+				--key-eq: #6b7078;
+				--disp: #eef1f4;
+				--disp-fg: #1b1d21;
+				--muted: #9aa0a8;
+				--accent: #6366f1;
+			}
+			html[data-theme='dark'] {
+				--bg: #0d0e10;
+				--pad: #17181c;
+			}
+			html,
+			body {
+				height: 100%;
+			}
+			body {
+				margin: 0;
+				background: var(--bg);
+				color: #fff;
+				font-family: system-ui, -apple-system, 'Segoe UI', 'Noto Sans TC', sans-serif;
+				display: flex;
+				justify-content: center;
+				overflow-x: hidden;
+			}
+			#links {
+				position: fixed;
+				top: 0.6rem;
+				right: 0.6rem;
+				display: flex;
+				gap: 0.6rem;
+				z-index: 40;
+			}
+			#links a {
+				color: var(--muted);
+				text-decoration: none;
+				font-size: 1.1rem;
+			}
+			#app {
+				width: min(100vw, 430px);
+				min-height: 100%;
+				display: flex;
+				flex-direction: column;
+				background: var(--pad);
+			}
+			/* ---------- 顯示區 ---------- */
+			#display {
+				background: var(--disp);
+				color: var(--disp-fg);
+				min-height: clamp(150px, 26vh, 240px);
+				padding: 0.5rem 0.9rem 0.6rem;
+				display: flex;
+				flex-direction: column;
+				position: relative;
+			}
+			#indicators {
+				display: flex;
+				gap: 0.7rem;
+				font-size: 0.8rem;
+				font-weight: 700;
+				color: #444;
+				min-height: 1.1rem;
+			}
+			#indicators .on {
+				color: #111;
+			}
+			#expr-line {
+				flex: 1;
+				overflow-x: auto;
+				overflow-y: hidden;
+				white-space: pre;
+				font-size: 1.05rem;
+				color: #333;
+				display: flex;
+				align-items: flex-end;
+				justify-content: flex-start;
+				scrollbar-width: none;
+			}
+			#expr-line::-webkit-scrollbar {
+				display: none;
+			}
+			#expr-line .cur {
+				display: inline-block;
+				width: 2px;
+				height: 1.15em;
+				background: #333;
+				vertical-align: text-bottom;
+				animation: blink 1s steps(1) infinite;
+			}
+			@keyframes blink {
+				50% {
+					opacity: 0;
+				}
+			}
+			#result {
+				font-size: clamp(2.2rem, 11vw, 3.4rem);
+				font-weight: 500;
+				text-align: right;
+				font-variant-numeric: tabular-nums;
+				white-space: nowrap;
+				overflow-x: auto;
+				scrollbar-width: none;
+				line-height: 1.15;
+			}
+			#result::-webkit-scrollbar {
+				display: none;
+			}
+			#sub-ind {
+				text-align: left;
+				font-size: 0.8rem;
+				font-weight: 700;
+				color: #444;
+				min-height: 1.1rem;
+			}
+			/* ---------- 鍵盤 ---------- */
+			#pad {
+				flex: 1;
+				display: grid;
+				grid-template-columns: repeat(6, 1fr);
+				gap: 5px;
+				padding: 7px 7px calc(10px + env(safe-area-inset-bottom));
+			}
+			.kcell {
+				display: flex;
+				flex-direction: column;
+				align-items: center;
+				justify-content: flex-end;
+				gap: 2px;
+				min-width: 0;
+			}
+			.kcell .sl {
+				font-size: 0.62rem;
+				color: var(--muted);
+				white-space: nowrap;
+				line-height: 1;
+				min-height: 0.72rem;
+			}
+			.kcell button {
+				width: 100%;
+				border: none;
+				border-radius: 6px;
+				background: var(--key);
+				color: #fff;
+				font: inherit;
+				font-size: clamp(0.85rem, 3.6vw, 1.02rem);
+				font-weight: 500;
+				min-height: clamp(40px, 6.6vh, 58px);
+				cursor: pointer;
+				padding: 0 2px;
+				white-space: nowrap;
+				overflow: hidden;
+			}
+			.kcell button:active {
+				filter: brightness(1.35);
+			}
+			.kcell.shift-on button {
+				background: #2b6e4d;
+				color: #c9ffd9;
+			}
+			.kcell.k-shift button {
+				background: var(--key-green);
+				font-weight: 800;
+				letter-spacing: 1px;
+			}
+			.kcell.k-orange button {
+				background: var(--key-orange);
+				color: #1b1b1b;
+				font-weight: 800;
+			}
+			.kcell.k-num button {
+				background: var(--key-num);
+				font-size: clamp(1.15rem, 5vw, 1.5rem);
+				font-weight: 500;
+			}
+			.kcell.k-op button {
+				background: var(--key-op);
+				color: #101114;
+				font-weight: 600;
+			}
+			.kcell.k-eq button {
+				background: var(--key-eq);
+				grid-column: span 2;
+				font-size: 1.4rem;
+			}
+			.kcell .wide {
+				grid-column: span 2;
+			}
+			.kcell.blank {
+				visibility: hidden;
+			}
+			#tip {
+				text-align: center;
+				color: var(--muted);
+				font-size: 0.72rem;
+				min-height: 1rem;
+				padding: 0 0.5rem 0.4rem;
+			}
+		</style>
+	</head>
+	<body>
+		<div id="links">
+			<a href="/t/index.html" title="工具箱">🧰</a>
+			<a href="/" title="回首頁">🏠</a>
+		</div>
+		<div id="app">
+			<div id="display">
+				<div id="indicators"><span id="ind-drg" class="on">DEG</span><span id="ind-shift"></span><span id="ind-mem"></span></div>
+				<div id="expr-line"></div>
+				<div id="result">0</div>
+				<div id="sub-ind"></div>
+			</div>
+			<div id="pad"></div>
+			<div id="tip"></div>
+		</div>
+		<script>
+			// ================= 鍵定義 =================
+			// act: 'shift' 'left' 'right' 'del' 'ac' 'eq' 'ins:…' 'dr' 'mr' 'mstore' 'mplus' 'mminus'
+			//      'dms' 'ran' 'sign' 'hyp' 'tip:…'
+			const KEYS = [
+				// 第一列
+				{ id: 'shift', label: 'SHIFT', act: 'shift', cls: 'k-shift' },
+				{ id: 'menu', label: 'MENU', act: 'tip:未開放' },
+				{ id: 'left', label: '◀', act: 'left' },
+				{ id: 'right', label: '▶', act: 'right' },
+				{ id: 'del', label: '◀x', act: 'del', cls: 'k-orange' },
+				{ id: 'ac', label: 'AC', act: 'ac', cls: 'k-orange' },
+				// 第二列
+				{ id: 'dr', label: 'DRG', act: 'dr', sl: '▷DRG' },
+				{ id: 'fse', label: 'x⇔E', act: 'tip:未開放', sl: 'FSE' },
+				{ id: 'mtx', label: '[▦]', act: 'tip:未開放', sl: 'MTRX' },
+				{ id: 'sigma', label: 'Σ', act: 'tip:未開放', sl: 'Π' },
+				{ id: 'int', label: '∫dx', act: 'tip:未開放', sl: 'd/dx' },
+				{ id: 'cam', label: '📷', act: 'tip:此鍵裝飾用' },
+				// 第三列
+				{ id: 'pi', label: 'π', act: 'ins:π', sl: 'hyp' },
+				{ id: 'sin', label: 'sin', act: 'fn:sin', sl: 'sin⁻¹' },
+				{ id: 'cos', label: 'cos', act: 'fn:cos', sl: 'cos⁻¹' },
+				{ id: 'tan', label: 'tan', act: 'fn:tan', sl: 'tan⁻¹' },
+				{ id: 'i', label: 'i', act: 'tip:未開放', sl: '∠' },
+				{ id: 'ec', label: 'e', act: 'ins:e', sl: 'log_x y' },
+				// 第四列
+				{ id: 'xinv', label: 'x⁻¹', act: 'ins:^(-1)', sl: 'lim' },
+				{ id: 'x2', label: 'x²', act: 'ins:^2', sl: 'x³' },
+				{ id: 'sqrt', label: '√x', act: 'ins:√(', sl: '³√x' },
+				{ id: 'pow', label: 'xʸ', act: 'ins:^', sl: 'ˣ√y' },
+				{ id: 'log', label: 'log₁₀', act: 'fn:log', sl: '10ˣ' },
+				{ id: 'ln', label: 'ln', act: 'fn:ln', sl: 'eˣ' },
+				// 第五列
+				{ id: 'dms', label: "D°M'S", act: 'dms', sl: 'STAT' },
+				{ id: 'dc', label: 'd/c', act: 'tip:未開放', sl: 'aᵇ/c' },
+				{ id: 'xvar', label: 'X', act: 'tip:未開放', sl: 'Y' },
+				{ id: 'xym', label: 'XY,M', act: 'tip:未開放', sl: 'HISTORY' },
+				{ id: 'mr', label: 'MR', act: 'mr', sl: 'M+', cls: 'k-num' },
+				{ id: 'mstore', label: 'x→M', act: 'mstore', sl: 'M−', cls: 'k-num' },
+				// 數字區（3 欄黑鍵 + 2 欄灰鍵 + 1 空欄）
+				{ id: 'n7', label: '7', act: 'ins:7', cls: 'k-num', sl: 'CPLX' },
+				{ id: 'n8', label: '8', act: 'ins:8', cls: 'k-num', sl: '∞' },
+				{ id: 'n9', label: '9', act: 'ins:9', cls: 'k-num', sl: '1̄23' },
+				{ id: 'lp', label: '(', act: 'ins:(', cls: 'k-op', sl: '%' },
+				{ id: 'rp', label: ')', act: 'ins:)', cls: 'k-op', sl: 'mod' },
+				{ blank: true },
+				{ id: 'n4', label: '4', act: 'ins:4', cls: 'k-num', sl: 'n!' },
+				{ id: 'n5', label: '5', act: 'ins:5', cls: 'k-num', sl: 'nCr' },
+				{ id: 'n6', label: '6', act: 'ins:6', cls: 'k-num', sl: 'nPr' },
+				{ id: 'mul', label: '×', act: 'ins:×', cls: 'k-op', sl: '▷BIN' },
+				{ id: 'div', label: '÷', act: 'ins:÷', cls: 'k-op', sl: '▷OCT' },
+				{ blank: true },
+				{ id: 'n1', label: '1', act: 'ins:1', cls: 'k-num', sl: 'CNST' },
+				{ id: 'n2', label: '2', act: 'ins:2', cls: 'k-num', sl: 'CONV' },
+				{ id: 'n3', label: '3', act: 'ins:3', cls: 'k-num', sl: 'abs' },
+				{ id: 'add', label: '＋', act: 'ins:＋', cls: 'k-op', sl: '▷DEC' },
+				{ id: 'sub', label: '−', act: 'ins:−', cls: 'k-op', sl: '▷HEX' },
+				{ blank: true },
+				{ id: 'n0', label: '0', act: 'ins:0', cls: 'k-num', sl: 'OTHER' },
+				{ id: 'dot', label: '.', act: 'ins:.', cls: 'k-num', sl: 'ran#' },
+				{ id: 'sgn', label: '＋/−', act: 'sign', cls: 'k-num', sl: 'Ans' },
+				{ id: 'exp', label: 'EXP', act: 'ins:E', cls: 'k-op', sl: 'EXP SI' },
+				{ id: 'eq', label: '✓', act: 'eq', cls: 'k-eq', sl: '=,<,>' },
+			];
+
+			const pad = document.getElementById('pad');
+			const tipEl = document.getElementById('tip');
+			const exprEl = document.getElementById('expr-line');
+			const resultEl = document.getElementById('result');
+			const indDrg = document.getElementById('ind-drg');
+			const indShift = document.getElementById('ind-shift');
+			const indMem = document.getElementById('ind-mem');
+			const subInd = document.getElementById('sub-ind');
+
+			// ================= 狀態 =================
+			let expr = ''; // 運算式字串
+			let cursor = 0; // 游標位置（字元索引）
+			let result = null; // 上一次計算結果
+			let lastExpr = '';
+			let resultMode = false; // 顯示結果中
+			let errMsg = null;
+			let shiftOn = false;
+			let hypOn = false;
+			let drg = 'DEG'; // DEG | RAD | GRA
+			let mem = 0;
+			let memSet = false;
+			let ansVal = null;
+
+			function fmt(v) {
+				if (!isFinite(v)) return v > 0 ? '∞' : '-∞';
+				if (v === 0) return '0';
+				if (Math.abs(v) >= 1e10 || Math.abs(v) < 1e-9) {
+					return v
+						.toExponential(7)
+						.replace(/(\.\d*?)0+e/, '$1e')
+						.replace(/\.e/, 'e');
+				}
+				return String(parseFloat(v.toPrecision(10)));
+			}
+
+			function factorial(n) {
+				if (n < 0 || n !== Math.floor(n) || n > 170) throw new Error('Math');
+				let r = 1;
+				for (let i = 2; i <= n; i++) r *= i;
+				return r;
+			}
+
+			// ================= 表示式求值器 =================
+			function evaluate(src, drgMode, ans) {
+				let s = src.replace(/ mod /g, '');
+				let pos = 0;
+				const FUNCS = ['sinh', 'cosh', 'tanh', 'asin', 'acos', 'atan', 'sin', 'cos', 'tan', 'log', 'ln', 'abs'];
+				function ws() {
+					while (s[pos] === ' ') pos++;
+				}
+				function err(type) {
+					throw new Error(type);
+				}
+				function toRad(v) {
+					return drgMode === 'DEG' ? (v * Math.PI) / 180 : drgMode === 'GRA' ? (v * Math.PI) / 200 : v;
+				}
+				function fromRad(v) {
+					return drgMode === 'DEG' ? (v * 180) / Math.PI : drgMode === 'GRA' ? (v * 200) / Math.PI : v;
+				}
+				function applyFn(name, v) {
+					switch (name) {
+						case 'sin':
+							return Math.sin(toRad(v));
+						case 'cos':
+							return Math.cos(toRad(v));
+						case 'tan': {
+							const r = Math.tan(toRad(v));
+							if (Math.abs(r) > 1e15) err('Math');
+							return r;
+						}
+						case 'asin':
+							if (v < -1 || v > 1) err('Math');
+							return fromRad(Math.asin(v));
+						case 'acos':
+							if (v < -1 || v > 1) err('Math');
+							return fromRad(Math.acos(v));
+						case 'atan':
+							return fromRad(Math.atan(v));
+						case 'sinh':
+							return Math.sinh(v);
+						case 'cosh':
+							return Math.cosh(v);
+						case 'tanh':
+							return Math.tanh(v);
+						case 'log':
+							if (v <= 0) err('Math');
+							return Math.log10(v);
+						case 'ln':
+							if (v <= 0) err('Math');
+							return Math.log(v);
+						case 'abs':
+							return Math.abs(v);
+					}
+				}
+				function parseExpr() {
+					let v = parseTerm();
+					ws();
+					while (s[pos] === '＋' || s[pos] === '−' || s[pos] === '+') {
+						const op = s[pos];
+						pos++;
+						const r = parseTerm();
+						v = op === '＋' ? v + r : v - r;
+						ws();
+					}
+					return v;
+				}
+				function startsPrimary() {
+					ws();
+					const ch = s[pos];
+					if (ch === undefined) return false;
+					return /[\d.]/.test(ch) || ch === '(' || ch === 'π' || ch === 'e' || ch === '√' || ch === '³' || FUNCS.some((f) => s.startsWith(f, pos)) || s.startsWith('Ans', pos);
+				}
+				function parseTerm() {
+					let v = parseFactor();
+					ws();
+					for (;;) {
+						if (s[pos] === '×' || s[pos] === '÷') {
+							const op = s[pos++];
+							const r = parseFactor();
+							if (op === '÷' && r === 0) err('Math');
+							v = op === '×' ? v * r : v / r;
+						} else if (s.charCodeAt(pos) === 7) {
+							pos += 1;
+							const r = parseFactor();
+							if (r === 0) err('Math');
+							v = ((v % r) + r) % r;
+						} else if (startsPrimary()) {
+							const r = parseFactor(); // 隱含乘法，如 2π、3(4+5)
+							v = v * r;
+						} else break;
+						ws();
+					}
+					return v;
+				}
+				function parseFactor() {
+					ws();
+					if (s[pos] === '−' || s[pos] === '-') {
+						pos++;
+						return -parseFactor();
+					}
+					return parsePower();
+				}
+				function parsePower() {
+					const base = parsePostfix();
+					ws();
+					if (s[pos] === '^') {
+						pos++;
+						const exp = parseFactor(); // 右結合，且 -2^2 = -4
+						return Math.pow(base, exp);
+					}
+					return base;
+				}
+				function parsePostfix() {
+					let v = parsePrimary();
+					for (;;) {
+						ws();
+						if (s[pos] === '!') {
+							pos++;
+							v = factorial(v);
+						} else if (s[pos] === '%') {
+							pos++;
+							v = v / 100;
+						} else break;
+					}
+					return v;
+				}
+				function parsePrimary() {
+					ws();
+					const num = /^(?:\d+(?:\.\d*)?|\.\d+)(?:E[+-]?\d+)?/.exec(s.slice(pos));
+					if (num) {
+						pos += num[0].length;
+						return parseFloat(num[0]);
+					}
+					if (s.startsWith('Ans', pos)) {
+						pos += 3;
+						if (ans === null) err('Syntax');
+						return ans;
+					}
+					if (s[pos] === 'π') {
+						pos++;
+						return Math.PI;
+					}
+					if (s[pos] === 'e') {
+						pos++;
+						return Math.E;
+					}
+					if (s[pos] === '√') {
+						pos++;
+						if (parsePeekNeg()) err('Syntax');
+						const v = parseFactor();
+						if (v < 0) err('Math');
+						return Math.sqrt(v);
+					}
+					if (s.startsWith('³√', pos)) {
+						pos += 2;
+						return Math.cbrt(parseFactor());
+					}
+					if (s[pos] === '(') {
+						pos++;
+						const v = parseExpr();
+						ws();
+						if (s[pos] !== ')') err('Syntax');
+						pos++;
+						return v;
+					}
+					for (const f of FUNCS) {
+						if (s.startsWith(f + '(', pos)) {
+							pos += f.length + 1;
+							const v = parseExpr();
+							ws();
+							if (s[pos] !== ')') err('Syntax');
+							pos++;
+							return applyFn(f, v);
+						}
+					}
+					err('Syntax');
+				}
+				function parsePeekNeg() {
+					// √ 後直接接運算符等錯誤由主流程處理
+					return false;
+				}
+				const v = parseExpr();
+				ws();
+				if (pos !== s.length) err('Syntax');
+				return v;
+			}
+
+			// ================= 顯示 =================
+			function render() {
+				// 運算式列（含游標）
+				exprEl.innerHTML = '';
+				if (resultMode) {
+					exprEl.textContent = lastExpr;
+				} else {
+					exprEl.append(document.createTextNode(expr.slice(0, cursor)));
+					const c = document.createElement('span');
+					c.className = 'cur';
+					exprEl.append(c);
+					exprEl.append(document.createTextNode(expr.slice(cursor)));
+				}
+				if (resultMode) {
+					resultEl.textContent = errMsg ? errMsg : result === null ? 'ERROR' : fmt(result);
+				} else {
+					resultEl.textContent = expr === '' ? '0' : '';
+				}
+				indDrg.textContent = drg;
+				indDrg.className = 'on';
+				indShift.textContent = hypOn ? 'S H' : shiftOn ? 'S' : '';
+				indShift.className = shiftOn || hypOn ? 'on' : '';
+				indMem.textContent = memSet ? 'M' : '';
+				indMem.className = memSet ? 'on' : '';
+				// SHIFT 狀態下高亮有第二功能的鍵
+				document.querySelectorAll('.kcell[data-has-shift]').forEach((k) => {
+					k.classList.toggle('shift-on', shiftOn);
+				});
+			}
+
+			function tip(msg) {
+				tipEl.textContent = msg;
+				setTimeout(() => (tipEl.textContent = ''), 2200);
+			}
+
+			// 插入字串；cont=true 表示接續上一個結果（運算符開頭 → 以 Ans 續算）
+			function ensureInputMode() {
+				if (resultMode) {
+					resultMode = false;
+					errMsg = null;
+					expr = '';
+					cursor = 0;
+				}
+			}
+
+			function insert(str, cont) {
+				if (resultMode) {
+					if (cont && /^[+＋−×÷^!%]/.test(str)) {
+						expr = 'Ans';
+						cursor = 3;
+					} else {
+						expr = '';
+						cursor = 0;
+					}
+					resultMode = false;
+					errMsg = null;
+				}
+				expr = expr.slice(0, cursor) + str + expr.slice(cursor);
+				cursor += str.length;
+				render();
+			}
+
+			function press(id) {
+				const key = KEYS.find((k) => k.id === id);
+				if (!key) return;
+				const useShift = shiftOn;
+				if (shiftOn && id !== 'shift') shiftOn = false;
+				if (hypOn && !['shift', 'pi', 'sin', 'cos', 'tan'].includes(id)) hypOn = false;
+				const act = useShift && key.sl ? 'SHIFT:' + key.sl + ':' + key.id : key.act;
+				execute(act, id, useShift);
+				render();
+			}
+
+			function execute(act, id, useShift) {
+				if (act.startsWith('tip:')) return tip(act.slice(4));
+				if (act === 'shift') {
+					shiftOn = !shiftOn;
+					return;
+				}
+				switch (act) {
+					case 'left':
+						if (resultMode) {
+							resultMode = false;
+							expr = lastExpr;
+							cursor = expr.length;
+						} else cursor = Math.max(0, cursor - 1);
+						return;
+					case 'right':
+						if (resultMode) {
+							resultMode = false;
+							expr = lastExpr;
+							cursor = expr.length;
+						} else cursor = Math.min(expr.length, cursor + 1);
+						return;
+					case 'del':
+						ensureInputMode();
+						if (cursor > 0) {
+							expr = expr.slice(0, cursor - 1) + expr.slice(cursor);
+							cursor--;
+						}
+						return;
+					case 'ac':
+						expr = '';
+						cursor = 0;
+						result = null;
+						resultMode = false;
+						lastExpr = '';
+						subInd.textContent = '';
+						return;
+					case 'eq': {
+						if (expr === '' && result === null) return;
+						const src = expr === '' ? lastExpr : expr;
+						try {
+							const v = evaluate(src, drg, ansVal);
+							ansVal = v;
+							result = v;
+							lastExpr = src;
+							resultMode = true;
+							errMsg = null;
+							cursor = 0;
+							subInd.textContent = '';
+						} catch (e) {
+							result = null;
+							lastExpr = src;
+							resultMode = true;
+							errMsg = e.message === 'Math' ? 'Math ERROR' : 'Syntax ERROR';
+							subInd.textContent = '按 AC 或 ◀ 重新編輯';
+						}
+						return;
+					}
+					case 'dr':
+						drg = drg === 'DEG' ? 'RAD' : drg === 'RAD' ? 'GRA' : 'DEG';
+						return;
+					case 'mr':
+						ensureInputMode();
+						insert(String(mem));
+						return;
+					case 'mstore': {
+						const v = currentNum();
+						if (v === null) return tip('沒有可儲存的數值');
+						mem = v;
+						memSet = true;
+						return tip('已存入 M');
+					}
+					case 'mplus': {
+						const v = currentNum();
+						if (v === null) return tip('沒有可加入的數值');
+						mem += v;
+						memSet = true;
+						return tip('M+ ' + fmt(v));
+					}
+					case 'mminus': {
+						const v = currentNum();
+						if (v === null) return tip('沒有可扣減的數值');
+						mem -= v;
+						memSet = true;
+						return tip('M− ' + fmt(v));
+					}
+					case 'dms': {
+						const v = currentNum();
+						if (v === null) return tip('先算出一個數值');
+						const sign = v < 0 ? '-' : '';
+						const abs = Math.abs(v);
+						const d = Math.floor(abs);
+						const mFull = (abs - d) * 60;
+						const m = Math.floor(mFull);
+						const sec = ((mFull - m) * 60).toFixed(1);
+						subInd.textContent = sign + d + '°' + m + "'" + sec + '"';
+						return;
+					}
+					case 'ran': {
+						ensureInputMode();
+						insert(String(Math.floor(Math.random() * 1000) / 1000));
+						return;
+					}
+					case 'sign': {
+						ensureInputMode();
+						// 翻轉游標前最後一個數字的正負號
+						const m = /(-?(?:\d+\.?\d*|\.\d+)(?:E[+-]?\d+)?)$/.exec(expr.slice(0, cursor));
+						if (!m) {
+							insert('−');
+							return;
+						}
+						const numStr = m[1];
+						const start = cursor - numStr.length;
+						const neg = numStr.startsWith('-');
+						const core = neg ? numStr.slice(1) : numStr;
+						const newNum = neg ? core : '-' + core;
+						expr = expr.slice(0, start) + newNum + expr.slice(cursor);
+						cursor = start + newNum.length;
+						return;
+					}
+					case 'hyp':
+						hypOn = !hypOn;
+						tip(hypOn ? 'hyp：下一個 sin/cos/tan 為雙曲函數' : '');
+						return;
+				}
+				if (act.startsWith('ins:')) {
+					const str = act.slice(4);
+					// 運算符／後綴接續上一結果（以 Ans 續算）
+					return insert(str, /^[+＋−×÷^!%]/.test(str));
+				}
+				if (act.startsWith('fn:')) {
+					let name = act.slice(3);
+					if (useShift && ['sin', 'cos', 'tan'].includes(name)) name = 'a' + name; // asin/acos/atan
+					if (hypOn && ['sin', 'cos', 'tan'].includes(name)) name = name + 'h';
+					ensureInputMode();
+					insert(name + '(');
+					return;
+				}
+				if (act.startsWith('SHIFT:')) {
+					const [, sl, kid] = act.split(':');
+					switch (kid + '|' + sl) {
+						case 'n4|n!':
+							return insert('!');
+						case 'dot|ran#':
+							return execute('ran', 'dot', false);
+						case 'n3|abs':
+							return insert('abs(');
+						case 'mr|M+':
+							return execute('mplus', 'mr', false);
+						case 'mstore|M−':
+							return execute('mminus', 'mstore', false);
+						case 'x2|x³':
+							return insert('^3');
+						case 'sqrt|³√x':
+							return insert('³√(');
+						case 'log|10ˣ':
+							return insert('10^(');
+case 'ln|eˣ':
+							return insert('e^(');
+case 'pi|hyp':
+							return execute('hyp', 'pi', false);
+						case 'lp|%':
+							return insert('%', true);
+						case 'rp|mod':
+							return insert(' mod ', true);
+						case 'sin|sin⁻¹':
+							return insert('asin(');
+						case 'cos|cos⁻¹':
+							return insert('acos(');
+						case 'tan|tan⁻¹':
+							return insert('atan(');
+						default:
+							return tip('未開放');
+					}
+				}
+			}
+
+			// 目前可操作的數值：結果模式取結果；輸入模式取整段運算式的求值
+			function currentNum() {
+				try {
+					if (resultMode && result !== null) return result;
+					if (expr === '') return null;
+					return evaluate(expr, drg, ansVal);
+				} catch (e) {
+					return null;
+				}
+			}
+
+			// ================= 建立鍵盤 =================
+			KEYS.forEach((k) => {
+				const cell = document.createElement('div');
+				if (k.blank) {
+					cell.className = 'kcell blank';
+					pad.append(cell);
+					return;
+				}
+				cell.className = 'kcell' + (k.cls ? ' ' + k.cls : '');
+				if (k.sl) {
+					cell.dataset.hasShift = '1';
+					const sl = document.createElement('span');
+					sl.className = 'sl';
+					sl.textContent = k.sl;
+					cell.append(sl);
+				} else {
+					const sp = document.createElement('span');
+					sp.className = 'sl';
+					sp.innerHTML = '&nbsp;';
+					cell.append(sp);
+				}
+				const b = document.createElement('button');
+				b.textContent = k.label;
+				if (k.id === 'eq') b.style.gridColumn = 'span 2';
+				b.addEventListener('click', () => press(k.id));
+				cell.append(b);
+				pad.append(cell);
+			});
+
+			render();
+		</script>
+	</body>
+</html>
