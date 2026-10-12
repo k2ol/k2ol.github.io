@@ -23,4 +23,4 @@ pnpm-debug.log*
 
 .justfile
 
-AGENTS.md
+AGENTS.md.calc_main.js
