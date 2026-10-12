@@ -59,6 +59,7 @@
 				font-size: 1.1rem;
 			}
 			#app {
+				position: relative;
 				width: min(100vw, 430px);
 				min-height: 100%;
 				display: flex;
@@ -210,6 +211,39 @@
 			.kcell.blank {
 				visibility: hidden;
 			}
+			#menu-ov {
+				position: absolute;
+				inset: 0;
+				z-index: 60;
+				background: rgba(10, 11, 13, 0.92);
+				display: flex;
+				flex-direction: column;
+				justify-content: center;
+				gap: 10px;
+				padding: 24px;
+			}
+			#menu-ov.hidden {
+				display: none;
+			}
+			#menu-ov .m-title {
+				text-align: center;
+				color: var(--muted);
+				font-size: 0.85rem;
+				letter-spacing: 2px;
+			}
+			#menu-ov button {
+				font: inherit;
+				font-size: 1rem;
+				padding: 12px;
+				border-radius: 8px;
+				border: 1px solid rgba(255, 255, 255, 0.15);
+				background: #2a2d33;
+				color: #fff;
+				cursor: pointer;
+			}
+			#menu-ov button:hover {
+				background: #3a3d44;
+			}
 			#tip {
 				text-align: center;
 				color: var(--muted);
@@ -226,10 +260,18 @@
 		</div>
 		<div id="app">
 			<div id="display">
-				<div id="indicators"><span id="ind-drg" class="on">DEG</span><span id="ind-shift"></span><span id="ind-mem"></span></div>
+				<div id="indicators"><span id="ind-drg" class="on">DEG</span><span id="ind-shift"></span><span id="ind-mem"></span><span id="ind-disp"></span><span id="ind-sto"></span></div>
 				<div id="expr-line"></div>
 				<div id="result">0</div>
 				<div id="sub-ind"></div>
+			</div>
+			<div id="menu-ov" class="hidden">
+				<div class="m-title">MENU</div>
+				<button data-m="dr">角度：<span id="m-dr">DEG</span></button>
+				<button data-m="fse">顯示：<span id="m-fse">Norm</span></button>
+				<button data-m="eng">ENG：<span id="m-eng">關</span></button>
+				<button data-m="clrm">清除 M 記憶</button>
+				<button data-m="close">關閉</button>
 			</div>
 			<div id="pad"></div>
 			<div id="tip"></div>
@@ -241,18 +283,18 @@
 			const KEYS = [
 				// 第一列
 				{ id: 'shift', label: 'SHIFT', act: 'shift', cls: 'k-shift' },
-				{ id: 'menu', label: 'MENU', act: 'tip:未開放' },
+				{ id: 'menu', label: 'MENU', act: 'menu' },
 				{ id: 'left', label: '◀', act: 'left' },
 				{ id: 'right', label: '▶', act: 'right' },
 				{ id: 'del', label: '◀x', act: 'del', cls: 'k-orange' },
 				{ id: 'ac', label: 'AC', act: 'ac', cls: 'k-orange' },
 				// 第二列
 				{ id: 'dr', label: 'DRG', act: 'dr', sl: '▷DRG' },
-				{ id: 'fse', label: 'x⇔E', act: 'tip:未開放', sl: 'FSE' },
+				{ id: 'fse', label: 'x⇔E', act: 'eng', sl: 'FSE' },
 				{ id: 'mtx', label: '[▦]', act: 'tip:未開放', sl: 'MTRX' },
-				{ id: 'sigma', label: 'Σ', act: 'tip:未開放', sl: 'Π' },
-				{ id: 'int', label: '∫dx', act: 'tip:未開放', sl: 'd/dx' },
-				{ id: 'cam', label: '📷', act: 'tip:此鍵裝飾用' },
+				{ id: 'sigma', label: 'Σ', act: 'ins:Σ(,,)', sl: 'Π' },
+				{ id: 'int', label: '∫dx', act: 'ins:∫(,,)', sl: 'd/dx' },
+				{ id: 'cam', label: '📷', act: 'theme' },
 				// 第三列
 				{ id: 'pi', label: 'π', act: 'ins:π', sl: 'hyp' },
 				{ id: 'sin', label: 'sin', act: 'fn:sin', sl: 'sin⁻¹' },
@@ -270,8 +312,8 @@
 				// 第五列
 				{ id: 'dms', label: "D°M'S", act: 'dms', sl: 'STAT' },
 				{ id: 'dc', label: 'd/c', act: 'tip:未開放', sl: 'aᵇ/c' },
-				{ id: 'xvar', label: 'X', act: 'tip:未開放', sl: 'Y' },
-				{ id: 'xym', label: 'XY,M', act: 'tip:未開放', sl: 'HISTORY' },
+				{ id: 'xvar', label: 'X', act: 'ins:X', sl: 'Y' },
+				{ id: 'xym', label: 'XY,M', act: 'comma', sl: 'STO' },
 				{ id: 'mr', label: 'MR', act: 'mr', sl: 'M+', cls: 'k-num' },
 				{ id: 'mstore', label: 'x→M', act: 'mstore', sl: 'M−', cls: 'k-num' },
 				// 數字區（3 欄黑鍵 + 2 欄灰鍵 + 1 空欄）
@@ -322,15 +364,25 @@
 			let mem = 0;
 			let memSet = false;
 			let ansVal = null;
+			let vars = { X: 0, Y: 0 };
+			let dispMode = 'norm'; // norm | fix | sci
+			let fixDigits = 6, sciDigits = 6;
+			let engOn = false;
+			let stoMode = false;
+			let cnstIdx = 0, convIdx = 0;
 
 			function fmt(v) {
 				if (!isFinite(v)) return v > 0 ? '∞' : '-∞';
-				if (v === 0) return '0';
+				if (v === 0) return dispMode === 'sci' ? (0).toExponential(sciDigits) : '0';
+				if (engOn) {
+					const exp = Math.floor(Math.log10(Math.abs(v)) / 3) * 3;
+					const m = v / Math.pow(10, exp);
+					return m.toFixed(Math.max(0, 9 - String(Math.abs(exp)).length - 2)) + 'e' + (exp >= 0 ? '+' : '') + exp;
+				}
+				if (dispMode === 'fix') return v.toFixed(fixDigits);
+				if (dispMode === 'sci') return v.toExponential(sciDigits);
 				if (Math.abs(v) >= 1e10 || Math.abs(v) < 1e-9) {
-					return v
-						.toExponential(7)
-						.replace(/(\.\d*?)0+e/, '$1e')
-						.replace(/\.e/, 'e');
+					return v.toExponential(7).replace(/(.d*?)0+e/, '$1e').replace(/.e/, 'e');
 				}
 				return String(parseFloat(v.toPrecision(10)));
 			}
@@ -346,7 +398,7 @@
 			function evaluate(src, drgMode, ans) {
 				let s = src.replace(/ mod /g, '');
 				let pos = 0;
-				const FUNCS = ['sinh', 'cosh', 'tanh', 'asin', 'acos', 'atan', 'sin', 'cos', 'tan', 'log', 'ln', 'abs'];
+				const FUNCS = ['sinh', 'cosh', 'tanh', 'asin', 'acos', 'atan', 'sin', 'cos', 'tan', 'log', 'ln', 'abs', 'nCr', 'nPr'];
 				function ws() {
 					while (s[pos] === ' ') pos++;
 				}
@@ -359,39 +411,67 @@
 				function fromRad(v) {
 					return drgMode === 'DEG' ? (v * 180) / Math.PI : drgMode === 'GRA' ? (v * 200) / Math.PI : v;
 				}
-				function applyFn(name, v) {
+				function applyFn(name, args) {
+					const one = (v) => { if (args.length !== 1) err('Syntax'); return args[0]; };
 					switch (name) {
 						case 'sin':
-							return Math.sin(toRad(v));
+							return Math.sin(toRad(one(args)));
 						case 'cos':
-							return Math.cos(toRad(v));
+							return Math.cos(toRad(one(args)));
 						case 'tan': {
+							const v = one(args);
 							const r = Math.tan(toRad(v));
 							if (Math.abs(r) > 1e15) err('Math');
 							return r;
 						}
-						case 'asin':
+						case 'asin': {
+							const v = one(args);
 							if (v < -1 || v > 1) err('Math');
 							return fromRad(Math.asin(v));
-						case 'acos':
+						}
+						case 'acos': {
+							const v = one(args);
 							if (v < -1 || v > 1) err('Math');
 							return fromRad(Math.acos(v));
+						}
 						case 'atan':
-							return fromRad(Math.atan(v));
+							return fromRad(Math.atan(one(args)));
 						case 'sinh':
-							return Math.sinh(v);
+							return Math.sinh(one(args));
 						case 'cosh':
-							return Math.cosh(v);
+							return Math.cosh(one(args));
 						case 'tanh':
-							return Math.tanh(v);
-						case 'log':
-							if (v <= 0) err('Math');
-							return Math.log10(v);
-						case 'ln':
+							return Math.tanh(one(args));
+						case 'log': {
+							if (args.length === 1) {
+								if (args[0] <= 0) err('Math');
+								return Math.log10(args[0]);
+							}
+							if (args.length === 2) {
+								if (args[0] <= 0 || args[1] <= 0 || args[1] === 1) err('Math');
+								return Math.log(args[0]) / Math.log(args[1]);
+							}
+							err('Syntax');
+						}
+						case 'ln': {
+							const v = one(args);
 							if (v <= 0) err('Math');
 							return Math.log(v);
+						}
 						case 'abs':
-							return Math.abs(v);
+							return Math.abs(one(args));
+						case 'nCr': {
+							if (args.length !== 2) err('Syntax');
+							const n = args[0], r = args[1];
+							if (n < 0 || r < 0 || n !== Math.floor(n) || r !== Math.floor(r) || r > n) err('Math');
+							return factorial(n) / (factorial(r) * factorial(n - r));
+						}
+						case 'nPr': {
+							if (args.length !== 2) err('Syntax');
+							const n = args[0], r = args[1];
+							if (n < 0 || r < 0 || n !== Math.floor(n) || r !== Math.floor(r) || r > n) err('Math');
+							return factorial(n) / factorial(n - r);
+						}
 					}
 				}
 				function parseExpr() {
@@ -410,7 +490,7 @@
 					ws();
 					const ch = s[pos];
 					if (ch === undefined) return false;
-					return /[\d.]/.test(ch) || ch === '(' || ch === 'π' || ch === 'e' || ch === '√' || ch === '³' || FUNCS.some((f) => s.startsWith(f, pos)) || s.startsWith('Ans', pos);
+					return /[\d.]/.test(ch) || ch === 'X' || ch === 'Y' || ch === '(' || ch === 'π' || ch === 'e' || ch === '√' || ch === '³' || FUNCS.some((f) => s.startsWith(f, pos)) || s.startsWith('Ans', pos);
 				}
 				function parseTerm() {
 					let v = parseFactor();
@@ -449,6 +529,12 @@
 						pos++;
 						const exp = parseFactor(); // 右結合，且 -2^2 = -4
 						return Math.pow(base, exp);
+					}
+					if (s.startsWith('ˣ√', pos)) {
+						pos += 2;
+						if (base === 0) err('Math');
+						const r2 = parseFactor();
+						return Math.pow(r2, 1 / base);
 					}
 					return base;
 				}
@@ -505,14 +591,95 @@
 						pos++;
 						return v;
 					}
+					function readRawArg() {
+						let d = 0, out = '';
+						while (pos < s.length) {
+							const ch = s[pos];
+							if (ch === '(') d++;
+							if (ch === ')') { if (d === 0) break; d--; }
+							if (ch === ',' && d === 0) break;
+							out += ch;
+							pos++;
+						}
+						return out;
+					}
+					if (s[pos] === 'X') { pos++; return vars.X; }
+					if (s[pos] === 'Y') { pos++; return vars.Y; }
+					if (s.startsWith('Σ(', pos)) {
+						pos += 2;
+						const fsrc = readRawArg();
+						ws();
+						if (s[pos] !== ',') err('Syntax');
+						pos++;
+						const a2 = parseExpr();
+						ws();
+						if (s[pos] !== ',') err('Syntax');
+						pos++;
+						const b2 = parseExpr();
+						ws();
+						if (s[pos] !== ')') err('Syntax');
+						pos++;
+						if (isNaN(a2) || isNaN(b2)) err('Syntax');
+						let lo = Math.ceil(a2), hi = Math.floor(b2);
+						if (lo > hi) { const t2 = lo; lo = hi; hi = t2; }
+						if (hi - lo > 100000) err('Math');
+						let sum = 0;
+						for (let x = lo; x <= hi; x++) {
+							const sv = vars.X;
+							vars.X = x;
+							try { sum += evaluate(fsrc, drgMode, ans); } finally { vars.X = sv; }
+						}
+						return sum;
+					}
+					if (s.startsWith('∫(', pos)) {
+						pos += 2;
+						const fsrc = readRawArg();
+						ws();
+						if (s[pos] !== ',') err('Syntax');
+						pos++;
+						const a3 = parseExpr();
+						ws();
+						if (s[pos] !== ',') err('Syntax');
+						pos++;
+						const b3 = parseExpr();
+						ws();
+						if (s[pos] !== ')') err('Syntax');
+						pos++;
+						const n3 = 200;
+						const h3 = (b3 - a3) / n3;
+						if (h3 === 0) return 0;
+						const f3 = (x) => { const sv = vars.X; vars.X = x; const r = evaluate(fsrc, drgMode, ans); vars.X = sv; return r; };
+						let sum = f3(a3) + f3(b3);
+						for (let i = 1; i < n3; i++) sum += f3(a3 + i * h3) * (i % 2 ? 4 : 2);
+						return (sum * h3) / 3;
+					}
+					if (s.startsWith('d/dx(', pos)) {
+						pos += 5;
+						const fsrc = readRawArg();
+						ws();
+						if (s[pos] !== ',') err('Syntax');
+						pos++;
+						const a4 = parseExpr();
+						ws();
+						if (s[pos] !== ')') err('Syntax');
+						pos++;
+						const h4 = 1e-5 * Math.max(1, Math.abs(a4));
+						const f4 = (x) => { const sv = vars.X; vars.X = x; const r = evaluate(fsrc, drgMode, ans); vars.X = sv; return r; };
+						return (f4(a4 + h4) - f4(a4 - h4)) / (2 * h4);
+					}
 					for (const f of FUNCS) {
 						if (s.startsWith(f + '(', pos)) {
 							pos += f.length + 1;
-							const v = parseExpr();
+							const args = [parseExpr()];
 							ws();
+							while (s[pos] === ',') {
+								pos++;
+								args.push(parseExpr());
+								ws();
+							}
 							if (s[pos] !== ')') err('Syntax');
 							pos++;
-							return applyFn(f, v);
+							return applyFn(f, args);
 						}
 					}
 					err('Syntax');
@@ -551,6 +718,11 @@
 				indShift.className = shiftOn || hypOn ? 'on' : '';
 				indMem.textContent = memSet ? 'M' : '';
 				indMem.className = memSet ? 'on' : '';
+				document.getElementById('ind-disp').textContent =
+					dispMode === 'fix' ? 'Fix' : dispMode === 'sci' ? 'Sci' : engOn ? 'ENG' : '';
+				document.getElementById('ind-disp').className = dispMode !== 'norm' || engOn ? 'on' : '';
+				document.getElementById('ind-sto').textContent = stoMode ? 'STO' : '';
+				document.getElementById('ind-sto').className = stoMode ? 'on' : '';
 				// SHIFT 狀態下高亮有第二功能的鍵
 				document.querySelectorAll('.kcell[data-has-shift]').forEach((k) => {
 					k.classList.toggle('shift-on', shiftOn);
@@ -574,7 +746,7 @@
 
 			function insert(str, cont) {
 				if (resultMode) {
-					if (cont && /^[+＋−×÷^!%]/.test(str)) {
+					if (cont && /^[+＋−×÷^!%ˣ]/.test(str)) {
 						expr = 'Ans';
 						cursor = 3;
 					} else {
@@ -586,6 +758,14 @@
 				}
 				expr = expr.slice(0, cursor) + str + expr.slice(cursor);
 				cursor += str.length;
+				// 模板類（含逗號的函數模板）把游標移到第一個逗號，方便依序填寫
+				const firstComma = str.indexOf(',');
+				if (firstComma > 0 && str.endsWith(')')) {
+					cursor = cursor - str.length + firstComma;
+				} else if (str.endsWith('(') && str !== '(') {
+					// 函數開頭（log( / nCr( / d/dx( / abs(）：自動補右括號，游標停在 ( 後
+					expr = expr.slice(0, cursor) + ')' + expr.slice(cursor);
+				}
 				render();
 			}
 
@@ -593,6 +773,18 @@
 				const key = KEYS.find((k) => k.id === id);
 				if (!key) return;
 				const useShift = shiftOn;
+				if (stoMode && (id === 'xvar' || id === 'mr')) {
+					const v = currentNum();
+					if (v === null) tip('沒有可儲存的數值');
+					else if (id === 'xvar') {
+						if (useShift) { vars.Y = v; tip('Y=' + fmt(v)); }
+						else { vars.X = v; tip('X=' + fmt(v)); }
+					} else { mem = v; memSet = true; tip('M=' + fmt(v)); }
+					stoMode = false;
+					render();
+					return;
+				}
+				if (stoMode && id !== 'shift') stoMode = false;
 				if (shiftOn && id !== 'shift') shiftOn = false;
 				if (hypOn && !['shift', 'pi', 'sin', 'cos', 'tan'].includes(id)) hypOn = false;
 				const act = useShift && key.sl ? 'SHIFT:' + key.sl + ':' + key.id : key.act;
@@ -639,6 +831,24 @@
 					case 'eq': {
 						if (expr === '' && result === null) return;
 						const src = expr === '' ? lastExpr : expr;
+						if (hasTopComma(src)) {
+							try {
+								const vals = splitTop(src).map((p) => evaluate(p, drg, ansVal));
+								const n2 = vals.length;
+								const sum = vals.reduce((a2, b2) => a2 + b2, 0);
+								ansVal = sum / n2;
+								result = ansVal;
+								lastExpr = src;
+								resultMode = true;
+								errMsg = null;
+								subInd.textContent = 'n=' + n2 + '　Σx=' + fmt(sum);
+							} catch (e2) {
+								result = null;
+								resultMode = true;
+								errMsg = e2.message === 'Math' ? 'Math ERROR' : 'Syntax ERROR';
+							}
+							return;
+						}
 						try {
 							const v = evaluate(src, drg, ansVal);
 							ansVal = v;
@@ -723,8 +933,94 @@
 						hypOn = !hypOn;
 						tip(hypOn ? 'hyp：下一個 sin/cos/tan 為雙曲函數' : '');
 						return;
+					case 'comma': {
+						// 模板填寫：覆寫游標後的逗號（若在模板逗號上），並跳到下一個逗號/收尾
+						const nextCh = expr[cursor];
+						if (nextCh === ',') {
+							cursor++;
+						} else if (nextCh === ')' || nextCh === undefined) {
+							// 已到結尾：在最後一個逗號後插入
+							expr = expr.slice(0, cursor) + ',' + expr.slice(cursor);
+							cursor++;
+						} else {
+							expr = expr.slice(0, cursor) + ',' + expr.slice(cursor);
+							cursor++;
+						}
+						// 跳到再下一個逗號或 ) 前
+						const nc = expr.indexOf(',', cursor);
+						if (nc >= 0) cursor = nc;
+						else {
+							const rc = expr.indexOf(')', cursor);
+							if (rc >= 0) cursor = rc;
+						}
+						return;
+					}
+					case 'eng':
+						engOn = !engOn;
+						return tip('工程記號：' + (engOn ? '開' : '關'));
+					case 'fse':
+						dispMode = dispMode === 'norm' ? 'fix' : dispMode === 'fix' ? 'sci' : 'norm';
+						return tip('顯示：' + (dispMode === 'norm' ? 'Norm' : dispMode === 'fix' ? 'Fix ' + fixDigits + ' 位' : 'Sci ' + sciDigits + ' 位'));
+					case 'sto':
+						stoMode = true;
+						return tip('STO：先算出數值，再按 X 存入（SHIFT+X 為 Y）');
+					case 'cnst': {
+						const CNSTS = [['光速 c', 299792458], ['重力加速度 g', 9.80665], ['普朗克常數 h', 6.62607015e-34], ['亞佛加厥數 NA', 6.02214076e23]];
+						const c2 = CNSTS[cnstIdx % CNSTS.length];
+						cnstIdx++;
+						insert(fmt(c2[1]));
+						return tip('常數：' + c2[0]);
+					}
+					case 'conv': {
+						const CONVS = [
+							['°C→°F', (x) => x * 9 / 5 + 32],
+							['°F→°C', (x) => ((x - 32) * 5) / 9],
+							['in→cm', (x) => x * 2.54],
+							['cm→in', (x) => x / 2.54],
+							['ft→m', (x) => x * 0.3048],
+							['m→ft', (x) => x / 0.3048],
+							['kg→lb', (x) => x * 2.2046226218],
+							['lb→kg', (x) => x / 2.2046226218],
+							['L→gal(US)', (x) => x * 0.2641720524],
+							['gal(US)→L', (x) => x / 0.2641720524],
+						];
+						const v = currentNum();
+						if (v === null) return tip('先輸入數值');
+						const c3 = CONVS[convIdx % CONVS.length];
+						convIdx++;
+						result = c3[1](v);
+						ansVal = result;
+						lastExpr = c3[0];
+						resultMode = true;
+						errMsg = null;
+						return tip('單位換算：' + c3[0]);
+					}
+					case 'theme': {
+						const next = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark';
+						document.documentElement.dataset.theme = next;
+						localStorage.setItem('t-theme', next);
+						return tip('主題：' + (next === 'dark' ? '深色' : '淺色'));
+					}
+					case 'menu': {
+						const ov = document.getElementById('menu-ov');
+						ov.classList.toggle('hidden');
+						if (!ov.classList.contains('hidden')) {
+							document.getElementById('m-dr').textContent = drg;
+							document.getElementById('m-fse').textContent = dispMode;
+							document.getElementById('m-eng').textContent = engOn ? '開' : '關';
+						}
+						return;
+					}
 				}
-				if (act.startsWith('ins:')) {
+				if (act.startsWith('base:')) {
+					const baseMap = { BIN: 2, OCT: 8, DEC: 10, HEX: 16 };
+					const v = currentNum();
+					if (v === null || !Number.isInteger(v)) return tip('需先算出整數');
+					subInd.textContent = act.slice(5) + ': ' + Math.abs(v).toString(baseMap[act.slice(5)]).toUpperCase();
+					return tip(v < 0 ? '（負號另計）' : '');
+				}
+				tip('未開放');
+					if (act.startsWith('ins:')) {
 					const str = act.slice(4);
 					// 運算符／後綴接續上一結果（以 Ans 續算）
 					return insert(str, /^[+＋−×÷^!%]/.test(str));
@@ -763,7 +1059,36 @@ case 'pi|hyp':
 						case 'lp|%':
 							return insert('%', true);
 						case 'rp|mod':
-							return insert(' mod ', true);
+							if (resultMode) { expr = 'Ans'; cursor = 3; resultMode = false; errMsg = null; }
+							return insert(' mod ');
+						case 'fse|FSE':
+							return execute('fse');
+						case 'xym|STO':
+							return execute('sto');
+						case 'xvar|Y':
+							return insert('Y');
+						case 'int|d/dx':
+							return insert('d/dx(');
+						case 'pow|ˣ√y':
+							return insert('ˣ√', true);
+						case 'ec|log_x y':
+							return insert('log(');
+						case 'mul|▷BIN':
+							return execute('base:BIN');
+						case 'div|▷OCT':
+							return execute('base:OCT');
+						case 'add|▷DEC':
+							return execute('base:DEC');
+						case 'sub|▷HEX':
+							return execute('base:HEX');
+						case 'n1|CNST':
+							return execute('cnst');
+						case 'n2|CONV':
+							return execute('conv');
+						case 'n5|nCr':
+							return insert('nCr(');
+						case 'n6|nPr':
+							return insert('nPr(');
 						case 'sin|sin⁻¹':
 							return insert('asin(');
 						case 'cos|cos⁻¹':
@@ -774,6 +1099,28 @@ case 'pi|hyp':
 							return tip('未開放');
 					}
 				}
+			}
+
+			function hasTopComma(src) {
+				let d = 0;
+				for (const ch of src) {
+					if (ch === '(') d++;
+					else if (ch === ')') d--;
+					else if (ch === ',' && d === 0) return true;
+				}
+				return false;
+			}
+			function splitTop(src) {
+				const parts = [];
+				let d = 0, cur = '';
+				for (const ch of src) {
+					if (ch === '(') d++;
+					if (ch === ')') d--;
+					if (ch === ',' && d === 0) { parts.push(cur); cur = ''; continue; }
+					cur += ch;
+				}
+				parts.push(cur);
+				return parts;
 			}
 
 			// 目前可操作的數值：結果模式取結果；輸入模式取整段運算式的求值
@@ -814,6 +1161,28 @@ case 'pi|hyp':
 				b.addEventListener('click', () => press(k.id));
 				cell.append(b);
 				pad.append(cell);
+			});
+
+			document.querySelectorAll('#menu-ov button').forEach((b) => {
+				b.addEventListener('click', () => {
+					const m = b.dataset.m;
+					if (m === 'dr') {
+						execute('dr');
+						document.getElementById('m-dr').textContent = drg;
+					} else if (m === 'fse') {
+						execute('fse');
+						document.getElementById('m-fse').textContent = dispMode;
+					} else if (m === 'eng') {
+						execute('eng');
+						document.getElementById('m-eng').textContent = engOn ? '開' : '關';
+					} else if (m === 'clrm') {
+						mem = 0;
+						memSet = false;
+						tip('M 已清除');
+					}
+					render();
+					if (m === 'close' || m === 'clrm') document.getElementById('menu-ov').classList.add('hidden');
+				});
 			});
 
 			render();
