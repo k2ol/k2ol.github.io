@@ -50,6 +50,12 @@
 				box-sizing: border-box;
 				transition: background 0.3s, color 0.3s;
 				user-select: none;
+				-webkit-user-select: none;
+				-webkit-tap-highlight-color: transparent;
+				touch-action: manipulation;
+			}
+			.gcard, .pops button, .pbtns button, #controls button, #mode-row button {
+				touch-action: manipulation;
 			}
 			h1 {
 				margin: 0;
@@ -387,10 +393,19 @@
 					this.cardsEl = rootEl.querySelector('.gcards');
 					this.scoreEl = rootEl.querySelector('.pscore');
 					rootEl.querySelectorAll('.pops button').forEach((b) => {
-						b.addEventListener('click', () => this.pickOp(b.dataset.op));
+						b.addEventListener('pointerdown', (e) => {
+							e.preventDefault();
+							this.pickOp(b.dataset.op);
+						});
 					});
-					rootEl.querySelector('.p-undo').addEventListener('click', () => this.undo());
-					rootEl.querySelector('.p-restart').addEventListener('click', () => this.deal(api.nums()));
+					rootEl.querySelector('.p-undo').addEventListener('pointerdown', (e) => {
+						e.preventDefault();
+						this.undo();
+					});
+					rootEl.querySelector('.p-restart').addEventListener('pointerdown', (e) => {
+						e.preventDefault();
+						this.deal(api.nums());
+					});
 				}
 
 				setScore(s) {
@@ -439,7 +454,10 @@
 							ex.textContent = c.expr;
 							d.append(val, ex);
 						}
-						d.addEventListener('click', () => this.onCard(i));
+						d.addEventListener('pointerdown', (e) => {
+							e.preventDefault();
+							this.onCard(i);
+						});
 						this.cardsEl.append(d);
 					});
 					this.root.querySelector('.p-undo').disabled = this.history.length === 0;
@@ -636,19 +654,21 @@
 				startRound();
 			}
 
-			document.getElementById('mode-single').addEventListener('click', () => setMode('single'));
-			document.getElementById('mode-duel').addEventListener('click', () => setMode('duel'));
-			document.getElementById('answer-btn').addEventListener('click', () => {
+			document.getElementById('mode-single').addEventListener('pointerdown', () => setMode('single'));
+			document.getElementById('mode-duel').addEventListener('pointerdown', () => setMode('duel'));
+			document.getElementById('answer-btn').addEventListener('pointerdown', () => {
 				if (raceOver) return;
 				const sols = solve24(nums.slice());
 				tipEl.innerHTML = sols.length
 					? '答案：<span class="ans">' + escapeHtml(sols[0]) + ' = 24</span>（括號順序就是點牌順序）'
 					: '這題無解？不可能，題目都是驗證過的';
 			});
-			document.getElementById('next-btn').addEventListener('click', () => {
+			document.getElementById('next-btn').addEventListener('pointerdown', () => {
 				if (mode === 'single' && !raceOver) streak = 0;
 				startRound();
 			});
+			// 禁用右鍵
+			document.addEventListener('contextmenu', (e) => e.preventDefault());
 
 			setMode('single');
 		</script>
